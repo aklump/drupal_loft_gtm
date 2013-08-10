@@ -1,0 +1,173 @@
+<?php
+/**
+ * @file
+ * Base module file for loft_gtm_dev
+ *
+ * @defgroup loft_gtm_dev Google Tag Manager API Developer Tools
+ * @{
+ */
+
+/**
+ * Implements hook_help().
+ *
+ * http://api.drupal.org/api/function/hook_help
+ *
+ * @param string $path
+ *   The router menu path, as defined in hook_menu(), for the help that is
+ *   being requested; e.g., 'admin/node' or 'user/edit'. If the router path
+ *   includes a % wildcard, then this will appear in $path; for example, node
+ *   pages would have $path equal to 'node/%' or 'node/%/view'. Your hook
+ *   implementation may also be called with special descriptors after a "#" sign.
+ * @param array $arg
+ *   An array that corresponds to the return value of the arg() function, for
+ *   modules that want to provide help that is specific to certain values of
+ *   wildcards in $path. For example, you could provide help for the path
+ *   'user/1' by looking for the path 'user/%' and $arg[1] == '1'. This array
+ *   should always be used rather than directly invoking arg(), because your
+ *   hook implementation may be called for other purposes besides building the
+ *   current page's help. Note that depending on which module is invoking
+ *   hook_help, $arg may contain only empty strings. Regardless, $arg[0] to
+ *   $arg[11] will always be set.
+ */
+function loft_gtm_dev_help($path, $arg) {
+  switch ($path) {
+    case 'admin/config/search/gop-gtm/parser':
+      $help = '';
+      $help .= t('<p>This page is used to generate PHP code that can be used by the API, from the DataLayer javascript provided by Google.</p>');
+      return $help;
+  }
+}
+
+/**
+ * Implements hook_permission().
+ */
+function loft_gtm_dev_permission() {
+  return array(
+    'loft_gtm_dev:use' => array(
+      'title' => t('Use Developer Tools'),
+      'description' => t('Allow user to use Google Tag Manager API Developer Tools.'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_menu().
+ */
+function loft_gtm_dev_menu() {
+  $items = array();
+  $items['admin/config/search/gop-gtm/parser'] = array(
+    'title' => 'Parse Code',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('loft_gtm_dev_parser_form'),
+    'access arguments' => array('loft_gtm_dev:use'),
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'includes/loft_gtm_dev.admin.inc',
+  );
+  $items['admin/config/search/gop-gtm/test'] = array(
+    'title' => 'Test Event',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('loft_gtm_dev_event_test_form'),
+    'access arguments' => array('loft_gtm_dev:use'),
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'includes/loft_gtm_dev.admin.inc',
+  );
+  $items['gop-gtm/test'] = array(
+    'title' => 'Test Page',
+    'page callback' => 'gop_gtm_dev_test_page',
+    'page arguments' => array(),
+    'access arguments' => array('loft_gtm_dev:use'),
+    'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function loft_gtm_dev_form_alter(&$form, $form_state, $form_id) {
+  if (user_access('loft_gtm_dev:use')
+      && variable_get('loft_gtm_dev_show_form_ids', FALSE)) {
+    drupal_set_message(t('Form Id: %id', array('%id' => $form_id)));
+  }
+}
+
+/**
+ * Form builder. Configure my_module.
+ *
+ * @ingroup forms
+ * @see system_settings_form()
+ */
+function loft_gtm_dev_form_loft_gtm_admin_settings_alter(&$form, $form_state, $form_id) {
+  if (user_access('loft_gtm_dev:use')) {
+    $form['develop'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Development'),
+      '#description' => t('These are development only features and should be disabled on production.'),
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+    );
+    $form['develop']['loft_gtm_dev_show_form_ids'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Display form ids as messages (never on production).'),
+      '#default_value' => variable_get('loft_gtm_dev_show_form_ids', FALSE),
+    );
+    $form['develop']['loft_gtm_dev_debug_messages'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Send events to the watchdog table (for debugging purposes).'),
+      '#default_value' => variable_get('loft_gtm_dev_debug_messages', FALSE),
+    );
+  }
+}
+
+/**
+ * Return a test page that first an event
+ */
+function gop_gtm_dev_test_page() {
+
+  $build = array();
+
+  // Reset
+  if (!empty($_GET['reset'])) {
+    unset($_SESSION['gop_gtm_dev']['test_page']);
+    $build[] = array('#markup' => t("Test has been reset. Click <a href='!url'>this link</a> to start over.", array(
+      '!url' => url($_GET['q']),
+    )));
+  }
+
+  // First Run Fire off the Event
+  elseif (empty($_SESSION['gop_gtm_dev']['test_page'])) {
+    $event = array (
+      '#method' => 'push',
+      '#params' =>
+      array (
+        'event' => 'eventTracker',
+        'eventCat' => 'Contact',
+        'eventAct' => 'Request',
+        'eventLbl' => 'General Inquiries',
+      ),
+    );
+    loft_gtm_queue_add($event);
+    $_SESSION['gop_gtm_dev']['test_page'] = 1;
+    $build[] = array('#markup' => 'An event has been triggered, check source code for javascript that looks like this:.');
+    $build[] = array(
+      '#theme' => 'loft_gtm_datalayer',
+      '#prefix' => '<p><code>',
+      '#suffix' => '</code></p>',
+    ) + $event;
+    $build[] = array('#markup' => t("Then reload this page or click <a href='!url'>this link</a>", array(
+      '!url' => url($_GET['q']),
+    )));
+  }
+
+  // Subsequent Runs, no event fired
+  else {
+    $build[] = array('#markup' => t("Assert source code does not contain any code.  To start this test over you need to run the following php: <p><code>&lt;?php unset(\$_SESSION['gop_gtm_dev']['test_page'])?> </code></p> or append <code>&reset=1</code> to the url , or click <a href='!url'>this reset link</a>.", array(
+      '!url' => url($_GET['q'], array('query' => array(
+        'reset' => 1,
+      ))),
+    )));
+  }
+
+  return $build;
+}

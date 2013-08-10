@@ -1,0 +1,285 @@
+<?php
+/**
+ * @file
+ * Automated tests for loft_gtm
+ *
+ * @ingroup loft_gtm
+ * @{
+ */
+
+class LoftGTMUnitTestCase extends DrupalUnitTestCase {
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Google Tag Manager API Unit tests',
+      'description' => 'Unit testing for the Google Tag Manager API module.',
+      'group' => 'Google Tag Manager API',
+    );
+  }
+
+  public function setUp($modules = array()) {
+    parent::setUp($modules);
+    module_load_include('inc', 'loft_gtm', 'includes/loft_gtm.queue');
+    $this->control->php = array (
+      '#method' => 'push',
+      '#params' =>
+      array (
+        'event' => 'eventTracker',
+        'eventCat' => 'Contact',
+        'eventAct' => 'Request',
+        'eventLbl' => 'General Inquiries',
+      ),
+    );
+  }
+
+  public function testGroup1() {
+    $this->subtest__loft_gtm_queue();
+    $this->subtest__scope();
+  }
+
+  public function subtest__loft_gtm_queue() {
+    unset($_SESSION['loft_gtm']['queue']);
+
+    /**
+     * Assert the first time loft_gtm_queue_add is called an empty array is returned
+     */
+    $_control_group = 'loft_gtm_queue_add';
+    // Desired test result
+    $control = array();
+    // The test and result
+    $return = loft_gtm_queue_add();
+    $result = $return;
+    $this->assertIdentical($control, $result, "Assert the first time loft_gtm_queue_add is called an empty array is returned", $_control_group);
+    // END ASSERT
+
+    /**
+     * Assert when loft_gtm_queue_add is called with an argument is it returned as the first element of the return array
+     */
+    $_control_group = 'loft_gtm_queue_add';
+    // Desired test result
+    $control = $this->control->php + array('#theme' => 'loft_gtm_datalayer', '#scope' => 'footer');
+    $control = array(
+      0 . md5(serialize($this->control->php)) => $control,
+    );
+    // The test and result
+    $return = loft_gtm_queue_add($this->control->php);
+    $result = $return;
+    $this->assertIdentical($control, $result, "Assert when loft_gtm_queue_add is called with an argument is it returned as the first element of the return array", $_control_group);
+
+    // Assert when the same event is added, two total events are returned
+    $control = $this->control->php + array('#theme' => 'loft_gtm_datalayer', '#scope' => 'footer');
+    $control = array(
+      0 . md5(serialize($this->control->php)) => $control,
+      1 . md5(serialize($this->control->php)) => $control,
+    );
+    $return = loft_gtm_queue_add($this->control->php);
+    $result = $return;
+    $this->assertIdentical($control, $result, "Assert when the same event is added, two total events are returned", $_control_group);
+    // END ASSERT
+
+    // Assert calling loft_gtm_queue_add now, with no arguments returns both values previously added
+    $return = loft_gtm_queue_add();
+    $result = $return;
+    $this->assertIdentical($control, $result, "Assert calling loft_gtm_queue_add now, with no arguments returns both values previously added", $_control_group);
+
+    /**
+     * Assert called loft_gtm_queue_clear with an empty doesn't alter the queue
+     */
+    $_control_group = 'loft_gtm_queue_clear';
+    // Desired test result
+    $control = $_SESSION['loft_gtm']['queue'];
+    // The test and result
+    $return = loft_gtm_queue_clear(array());
+    $result = $return;
+    $this->assertIdentical($control, $result, "Assert called loft_gtm_queue_clear with an empty doesn't alter the queue", $_control_group);
+    // END ASSERT
+
+    /**
+     * Assert calling loft_gtm_queue_clear with one id only removes that id
+     */
+    $_control_group = 'loft_gtm_queue_clear';
+    // Desired test result
+    $subject = 0 . md5(serialize($this->control->php));
+    $control = $this->control->php + array('#theme' => 'loft_gtm_datalayer', '#scope' => 'footer');
+    $control = array(
+      1 . md5(serialize($this->control->php)) => $control,
+    );
+    // The test and result
+    $return = loft_gtm_queue_clear($subject);
+    $result = $return;
+    $this->assertIdentical($control, $result, "Assert calling loft_gtm_queue_clear with one id only removes that id", $_control_group);
+    // END ASSERT
+
+    /**
+     * Assert calling loft_gtm_queue_clear with an invalid id does nothing
+     */
+    $_control_group = 'loft_gtm_queue_clear';
+    // Desired test result
+    $control = $_SESSION['loft_gtm']['queue'];
+    // The test and result
+    $return = loft_gtm_queue_clear(array('chocolate'));
+    $result = $return;
+    $this->assertIdentical($control, $result, "Assert calling loft_gtm_queue_clear with an invalid id does nothing", $_control_group);
+    // END ASSERT
+  }
+
+  public function subtest__scope() {
+
+    /**
+     * Assert when method is push the scope is set to footer
+     */
+    $_control_group = 'loft_gtm_queue_add';
+    // Desired test result
+    $control = 'footer';
+    // The test and result
+    unset($_SESSION['loft_gtm']['queue']);
+    $subject = $this->control->php;
+    $return = loft_gtm_queue_add($subject);
+    $id = key($return);
+    $result = $return[$id]['#scope'];
+    $this->assertIdentical($control, $result, "Assert when method is push the scope is set to footer", $_control_group);
+    // END ASSERT
+
+    /**
+     * Assert when method is blank the scope is set to header
+     */
+    $_control_group = 'loft_gtm_queue_add';
+    // Desired test result
+    $control = 'header';
+    // The test and result
+    loft_gtm_queue_clear(array($id));
+    $subject = $this->control->php;
+    $subject['#method'] = '';
+    $return = loft_gtm_queue_add($subject);
+    $id = key($return);
+    $result = $return[$id]['#scope'];
+    $this->assertIdentical($control, $result, "Assert when method is blank the scope is set to header", $_control_group);
+    // END ASSERT
+  }
+}
+
+class LoftGTMWebTestCase extends DrupalWebTestCase {
+  public static function getInfo() {
+    return array(
+      'name' => 'Google Tag Manager API Integration tests',
+      'description' => 'Integration testing for the Google Tag Manager API module.',
+      'group' => 'Google Tag Manager API',
+    );
+  }
+
+  public function setUp($modules = array()) {
+    $modules[] = 'loft_gtm';
+    $modules[] = 'loft_gtm_dev';
+    parent::setUp($modules);
+
+    variable_set('loft_gtm_code', '<!-- Google Tag Manager -->');
+
+    $this->control->php = array (
+      '#method' => 'push',
+      '#params' =>
+      array (
+        'event' => 'eventTracker',
+        'eventCat' => 'Contact',
+        'eventAct' => 'Request',
+        'eventLbl' => 'General Inquiries',
+      ),
+    );
+    $this->control->push = 'dataLayer.push({"event":"eventTracker","eventCat":"Contact","eventAct":"Request","eventLbl":"General Inquiries"});';
+    $this->control->dataLayer = <<<EOD
+dataLayer = {"event":"eventTracker","eventCat":"Contact","eventAct":"Request","eventLbl":"General Inquiries"};
+EOD;
+  }
+
+  public function testGroup1() {
+    $this->subtest__loft_gtm_mail_alter();
+    $this->subtest__theme();
+    $this->subtest__html_output();
+  }
+
+  public function subtest__loft_gtm_mail_alter() {
+    $_control_message = array();
+    $_control_message['body'] = array(
+      'This is the first sentence',
+      t('This one contains a link !url.', array(
+        '!url' => url('user/login', array('absolute' => TRUE)),
+      )),
+      t('Do not modify this link: (!url)', array(
+        '!url' => url('user/password', array('absolute' => TRUE, 'query' => array('alpha' => 'bravo','utm_nooverride' => 1))),
+      )),
+    );
+
+    /**
+     * Assert outgoing mail links have the utm_nooverride appended correctly
+     */
+    $_control_group = 'loft_gtm_mail_alter';
+    // Desired test result
+    $control = <<<EOD
+This is the first sentence
+This one contains a link http://dev.globalonenessproject.local/user/login?utm_nooverride=1.
+Do not modify this link: (http://dev.globalonenessproject.local/user/password?alpha=bravo&utm_nooverride=1)
+EOD;
+
+    // The test and result
+    $subject = $_control_message;
+    loft_gtm_mail_alter($subject);
+    $result = implode("\n", $subject['body']);
+    $this->assertIdentical($control, $result, "Assert outgoing mail links have the utm_nooverride appended correctly.", $_control_group);
+    // END ASSERT
+  }
+
+  public function subtest__theme() {
+    module_load_include('inc', 'loft_gtm', 'includes/loft_gtm.theme');
+    $_control_event = array('event' => $this->control->php);
+
+    /**
+     * Assert theme for a push method formats correctly
+     */
+    $_control_group = 'theme_loft_gtm_datalayer';
+    // Desired test result
+    $control = $this->control->push;
+    // The test and result
+    $return = theme_loft_gtm_datalayer($_control_event);
+    $result = $return;
+    $this->assertEqual($control, $result, "Assert theme for a push method formats correctly", $_control_group);
+    // END ASSERT
+
+    /**
+     * Assert theme for empty method formats correctly
+     */
+    $_control_group = 'theme_loft_gtm_datalayer';
+    // Desired test result
+    $control = $this->control->dataLayer;
+    // The test and result
+    $subject = $_control_event;
+    $subject['event']['#method'] = '';
+    $return = theme_loft_gtm_datalayer($subject);
+    $result = $return;
+    $this->assertEqual($control, $result, "Assert theme for empty method formats correctly", $_control_group);
+    // END ASSERT
+  }
+
+  public function subtest__html_output() {
+    variable_set('loft_gtm_injection_mode', 1);
+
+    $account = $this->drupalCreateUser(array('loft_gtm_dev:use'));
+    $this->drupalLogin($account);
+    $html = $this->drupalGet('gop-gtm/test?reset=1');
+
+    /**
+     * Assert the event appears written in the html on next page load
+     */
+    // Desired raw text to find
+    $_control_group = 'html output';
+    $html = $this->drupalGet('gop-gtm/test');
+    $this->assertRaw($this->control->push, 'Assert the event appears written in the html on next page load', $_control_group);
+    // END ASSERT: <front>
+
+    /**
+     * Because the event is erased from the queue via ajax, I can't seem to find
+       a way to test this here. I tried calling the ajax path directly but the
+       token isn't working across curl.
+    */
+  }
+}
+
+/** @} */ //end of group: loft_gtm

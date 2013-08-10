@@ -1,0 +1,275 @@
+<?php
+/**
+ * @file
+ * Base module file for loft_gtm
+ *
+ * @defgroup loft_gtm Google Tag Manager API
+ * @{
+ */
+
+/**
+ * @var LOFT_GTM_INJECTION_MODE
+ *
+ * This setting answers the question of how the dataLayer.push events are
+   processed in the DOM.
+ *
+ * 1 = written in the page footer as inline js
+ * 2 = inserted via ajax as a direct call to the dataLayer object
+ */
+define('LOFT_GTM_INJECTION_MODE', 1);
+
+/**
+ * @var LOFT_GTM_CODE
+ */
+define('LOFT_GTM_CODE', '');
+
+define('LOFT_GTM_URL_REGEX', '((([A-Za-z]{3,9}:(?:\/\/)?)(?:[-;:&=\+\$,\w]+@)?[A-Za-z0-9.-]+|(?:www.|[-;:&=\+\$,\w]+@)[A-Za-z0-9.-]+)((?:\/[\+~%\/.\w-_]*)?\??(?:[-\+=&;%@.\w_]*)#?(?:[\w]*))?)');
+
+/**
+ * Determine if GTM is active for this page
+ *
+ * @return bool
+ */
+function loft_gtm_is_active() {
+  $code = variable_get('loft_gtm_code', LOFT_GTM_CODE);
+  return !empty($code);
+}
+
+/**
+ * Implements hook_process_page().
+ */
+function loft_gtm_process_page(&$vars) {
+  // Add any queued js
+  if ($queue = loft_gtm_queue_add()) {
+
+    $mode = variable_get('loft_gtm_injection_mode', LOFT_GTM_INJECTION_MODE);
+
+    drupal_add_js(drupal_get_path('module', 'loft_gtm') . '/loft_gtm.js');
+    drupal_add_js(array(
+      'gopGTM' => array(
+        'url' => url('gop-gtm/ajax'),
+        'method' => $mode == 1 ? 'clear' : 'process',
+        'token' => drupal_get_token('loft_gtm'),
+        'ids' => json_encode(array_keys($queue)),
+      ),
+    ), 'setting');
+
+    // Add our queue js...
+    $debug = variable_get('loft_gtm_dev_debug_messages', FALSE);
+    $placement = array();
+    if ($mode == 1 || $debug) {
+      foreach (array_keys($queue) as $key) {
+        $placement[$queue[$key]['#scope']][$key] = $js = drupal_render($queue[$key]);
+        if ($debug) {
+          watchdog('loft_gtm_dev', $js, array(), WATCHDOG_DEBUG);
+        }
+      }
+
+      if ($mode == 1) {
+        foreach (array_keys($placement) as $key) {
+          array_unshift($placement[$key], '// Google Tag Manager');
+          array_push($placement[$key], '// End Google Tag Manager');
+          $flat = implode("\n", $placement[$key]);
+          drupal_add_js($flat, array(
+            'type' => 'inline',
+            'scope' => $key,
+          ));
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_preprocess_html().
+ */
+function loft_gtm_preprocess_html(&$vars) {
+
+  // Inserts the master GTM code snippet
+  if (loft_gtm_is_active()
+      && ($code = variable_get('loft_gtm_code', LOFT_GTM_CODE))) {
+    if (empty($vars['page']['page_top'])) {
+      $vars['page']['page_top'] = array();
+    }
+
+    // Find the lowest weight and set ours below that
+    $weight = 0;
+    foreach ($vars['page']['page_top'] as $value) {
+      if (isset($value['#weight'])) {
+        $weight = min($weight, $value['#weight']);
+      }
+    }
+    $vars['page']['page_top'][] = array(
+      '#markup' => $code,
+      '#weight' => $weight - 1,
+    );
+  }
+}
+
+/**
+ * Implements hook_permission().
+ */
+function loft_gtm_permission() {
+  return array(
+    'loft_gtm:administer' => array(
+      'title' => t('Administer Google Tag Manager'),
+      'description' => t("Perform administration tasks for Google Tag Manager API."),
+    ),
+  );
+}
+
+/**
+ * Implements hook_menu().
+ */
+function loft_gtm_menu() {
+  $items = array();
+
+  $items['admin/config/search/gop-gtm'] = array(
+    'title' => 'Google Tag Manager',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('loft_gtm_admin_settings'),
+    'access arguments' => array('loft_gtm:administer'),
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'includes/loft_gtm.admin.inc',
+  );
+  $items['admin/config/search/gop-gtm/settings'] = array(
+    'title' => 'Settings',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => -10,
+  );
+  $items['gop-gtm/ajax'] = array(
+    'page callback' => 'loft_gtm_ajax_handler',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+/**
+ * Handles the ajax call.
+ *
+ * Expects to receive from an url like: gop-gtm/ajax/queue/process/ajax arg(2)
+   becomes the method and then we call function: _loft_gtm_ajax_handler_queue()
+ */
+function loft_gtm_ajax_handler() {
+  $args = func_get_args();
+  $method = array_shift($args);
+  module_load_include('inc', 'loft_gtm', "includes/loft_gtm.$method");
+  $function = '_loft_gtm_ajax_handler_' . $method;
+  $valid = !empty($_POST['token']) && drupal_get_token('loft_gtm') == $_POST['token'];
+  if ($valid && function_exists($function)) {
+    call_user_func_array($function, $args);
+  }
+
+  return MENU_NOT_FOUND;
+}
+
+/**
+ * Add javascript to the queue to be added on next page load
+ *
+ * @param mixed $data
+ *   (Optional) Defaults to NULL.
+ *   - #method
+ *   - #params array
+ *     - Each element can be a value or an array; if latter:
+ *       - callback: the callback will be called immediately
+ *       - callback arguments
+ *
+ * @return array
+ *   An array of all js in the queue
+ *
+ * @tested
+ */
+function loft_gtm_queue_add($data = NULL) {
+  if (!isset($_SESSION['loft_gtm']['queue'])) {
+    $_SESSION['loft_gtm']['queue'] = array();
+  }
+  if ($data) {
+    $data += array(
+      '#method' => '',
+      '#params' => array(),
+    );
+
+    $key = count($_SESSION['loft_gtm']['queue']) . md5(serialize($data));
+    $data += array(
+      '#theme' => 'loft_gtm_datalayer',
+    );
+    $data['#scope'] = empty($data['#method']) ? 'header' : 'footer';
+    $_SESSION['loft_gtm']['queue'][$key] = $data;
+  }
+
+  return $_SESSION['loft_gtm']['queue'];
+}
+
+/**
+ * Implements hook_theme().
+ */
+function loft_gtm_theme($existing, $type, $theme, $path) {
+  return array(
+    'loft_gtm_datalayer' => array(
+      'file' => 'includes/loft_gtm.theme.inc',
+      'render element' => 'event',
+    ),
+  );
+}
+
+/**
+ * Return the current unaliased page
+ *
+ * Takes an aliased page and returns the relative normal url
+ *
+ * @param array $options
+ *   (Optional) Defaults to array.  These are passed to url()
+ *
+ * @return string
+ *
+ * @see url().
+ * @see drupal_get_normal_path().
+ */
+function loft_gtm_get_path($path = '', $options = array()) {
+  $options += array(
+    'alias' => TRUE,
+  );
+  $path = $path ? $path : $_GET['q'];
+  return url(drupal_get_normal_path($path), $options);
+}
+
+/**
+ * Implements hook_mail_alter().
+ *
+ * @param array &$message
+ *
+ * @tested
+ */
+function loft_gtm_mail_alter(&$message) {
+  if (empty($message['body'])) {
+    return;
+  }
+
+  // Determine the base url of the website
+  $url = url(NULL, array('absolute' => TRUE));
+  $url = pathinfo($url);
+  $url = $url['basename'];
+
+  foreach (array_keys($message['body']) as $key) {
+    // Locate all urls in the message
+    preg_match_all(LOFT_GTM_URL_REGEX, $message['body'][$key], $found);
+    $found[0] = array_unique($found[0]);
+    foreach ($found[0] as $find_key => $find) {
+
+      // If this is an url coming here then we need to append utm_nooverride=1
+      if (strpos($find, $url) !== FALSE && strpos($find, 'utm_nooverride') === FALSE) {
+        $replace = empty($found[$find_key][5]) ? '?' : '&';
+        $replace .= 'utm_nooverride=1';
+
+        // The regex can return an url that ends in .; but that shouldn't happen
+        // with Drupal so we fix it here, rather than in the regex, it's easier.
+        $find = trim($find, '.');
+
+        // Now add the gtm param
+        $message['body'][$key] = str_replace($find, $find . $replace, $message['body'][$key]);
+      }
+    }
+  }
+}

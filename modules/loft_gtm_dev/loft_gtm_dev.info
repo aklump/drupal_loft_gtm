@@ -1,0 +1,5 @@
+name = Google Tag Manager API Developer Tools
+description = Adds developer tools for working with the API. Not for production use!
+package = Analytics
+version = 7.x-0.1
+core = 7.x
