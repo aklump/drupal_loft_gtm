@@ -46,7 +46,7 @@ function loft_gtm_process_page(&$vars) {
 
     drupal_add_js(drupal_get_path('module', 'loft_gtm') . '/loft_gtm.js');
     drupal_add_js(array(
-      'gopGTM' => array(
+      'loftGTM' => array(
         'url' => url('gop-gtm/ajax'),
         'method' => $mode == 1 ? 'clear' : 'process',
         'token' => drupal_get_token('loft_gtm'),
@@ -57,7 +57,7 @@ function loft_gtm_process_page(&$vars) {
     // Add our queue js...
     $debug = variable_get('loft_gtm_dev_debug_messages', FALSE);
     $placement = array();
-    if ($mode == 1 || $debug) {
+    if ($mode === LOFT_GTM_INJECTION_MODE || $debug) {
       foreach (array_keys($queue) as $key) {
         $placement[$queue[$key]['#scope']][$key] = $js = drupal_render($queue[$key]);
         if ($debug) {
@@ -65,7 +65,7 @@ function loft_gtm_process_page(&$vars) {
         }
       }
 
-      if ($mode == 1) {
+      if ($mode === LOFT_GTM_INJECTION_MODE) {
         foreach (array_keys($placement) as $key) {
           array_unshift($placement[$key], '// Google Tag Manager');
           array_push($placement[$key], '// End Google Tag Manager');
@@ -166,7 +166,7 @@ function loft_gtm_ajax_handler() {
 }
 
 /**
- * Add javascript to the queue to be added on next page load
+ * Add a GTM event to the queue to be output to the page
  *
  * @param mixed $data
  *   (Optional) Defaults to NULL.

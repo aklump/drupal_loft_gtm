@@ -6,18 +6,18 @@
  * @{
  */
 (function ($) {
-  Drupal.gopGTM = Drupal.gopGTM || {};
+  Drupal.loftGTM = Drupal.loftGTM || {};
 
   /**
    * Retrieve and execute queue records by id
    *
    * @param array ids
    */
-  Drupal.gopGTM.process = function(ids) {
+  Drupal.loftGTM.process = function(ids) {
     var settings = Drupal.settings;
-    $.post(settings.gopGTM.url + '/queue/process/ajax', {
+    $.post(settings.loftGTM.url + '/queue/process/ajax', {
       ids: ids,
-      token: settings.gopGTM.token,
+      token: settings.loftGTM.token,
     }, function(data) {
       for (var i in data) {
         if (data[i].method) {
@@ -35,23 +35,23 @@
    *
    * @param array ids
    */
-  Drupal.gopGTM.clear = function(ids) {
+  Drupal.loftGTM.clear = function(ids) {
     var settings = Drupal.settings;
-    $.post(settings.gopGTM.url + '/queue/clear/ajax', {
+    $.post(settings.loftGTM.url + '/queue/clear/ajax', {
       ids: ids,
-      token: settings.gopGTM.token,
+      token: settings.loftGTM.token,
     });
   };
 
   /**
   * Core behavior for loft_gtm.
   */
-  Drupal.behaviors.gopGTM = Drupal.behaviors.gopGTM || {};
-  Drupal.behaviors.gopGTM.attach = function (context, settings) {
+  Drupal.behaviors.loftGTM = Drupal.behaviors.loftGTM || {};
+  Drupal.behaviors.loftGTM.attach = function (context, settings) {
 
     // Process the queue
-    if (settings.gopGTM.ids.length) {
-      Drupal.gopGTM[settings.gopGTM.method](settings.gopGTM.ids);
+    if (settings.loftGTM.ids.length) {
+      Drupal.loftGTM[settings.loftGTM.method](settings.loftGTM.ids);
     }
   };
 
