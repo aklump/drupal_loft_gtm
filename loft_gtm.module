@@ -23,7 +23,8 @@ define('LOFT_GTM_INJECTION_MODE', 1);
  */
 define('LOFT_GTM_CODE', '');
 
-define('LOFT_GTM_URL_REGEX', '((([A-Za-z]{3,9}:(?:\/\/)?)(?:[-;:&=\+\$,\w]+@)?[A-Za-z0-9.-]+|(?:www.|[-;:&=\+\$,\w]+@)[A-Za-z0-9.-]+)((?:\/[\+~%\/.\w-_]*)?\??(?:[-\+=&;%@.\w_]*)#?(?:[\w]*))?)');
+define('LOFT_GTM_URL_REGEX_FIND', '/(?:(([A-Za-z]{3,9}:(?:\/\/)?)(?:[-;:&=\+\$,\w]+@)?([A-Za-z0-9.-]+)|(?:www.|[-;:&=\+\$,\w]+@)[A-Za-z0-9.-]+)((\/[\+~%\/.\w-_]*)?\??([-\+=&;%@.\w_]*)(#?(?:[\w]*)))?)/i');
+define('LOFT_GTM_URL_REGEX_REPLACE', '${1}${5}?utm_nooverride=1&${6}${7}');
 
 /**
  * Determine if GTM is active for this page
@@ -249,6 +250,32 @@ function loft_gtm_module_implements_alter(&$implementations, $hook) {
 }
 
 /**
+ * Helper function to return the website domain name
+ *
+ * Usage: automated tests will alter the actual domain like this:
+ *
+ * @code
+ *   global $loft_gtm_domain;
+ *   $loft_gtm_domain = 'https://www.someotherdomainfortesting'
+ * @endcode
+ *
+ * @return string
+ *
+ * @see  loft_gtm_mail_alter()
+ */
+function _loft_gtm_get_domain() {
+  global $loft_gtm_domain;
+  if ($domain = $loft_gtm_domain) {
+    return $domain;
+  }
+  $domain = url(NULL, array('absolute' => TRUE));
+  $domain = pathinfo($domain);
+  $domain = $domain['basename'];
+
+  return $domain;
+}
+
+/**
  * Implements hook_mail_alter().
  *
  * @param array &$message
@@ -261,27 +288,25 @@ function loft_gtm_mail_alter(&$message) {
   }
 
   // Determine the base url of the website
-  $url = url(NULL, array('absolute' => TRUE));
-  $url = pathinfo($url);
-  $url = $url['basename'];
+  $url = _loft_gtm_get_domain();
 
   foreach (array_keys($message['body']) as $key) {
-    // Locate all urls in the message
-    preg_match_all(LOFT_GTM_URL_REGEX, $message['body'][$key], $found);
-    $found[0] = array_unique($found[0]);
-    foreach ($found[0] as $find_key => $find) {
 
-      // If this is an url coming here then we need to append utm_nooverride=1
-      if (strpos($find, $url) !== FALSE && strpos($find, 'utm_nooverride') === FALSE) {
-        $replace = empty($found[$find_key][5]) ? '?' : '&';
-        $replace .= 'utm_nooverride=1';
+    $text = &$message['body'][$key];
+    
+    // Add utm_nooverride=1 to all links in the message
+    $text = preg_replace(LOFT_GTM_URL_REGEX_FIND, LOFT_GTM_URL_REGEX_REPLACE, $text);
 
-        // The regex can return an url that ends in .; but that shouldn't happen
-        // with Drupal so we fix it here, rather than in the regex, it's easier.
-        $find = trim($find, '.');
-
-        // Now add the gtm param
-        $message['body'][$key] = str_replace($find, $find . $replace, $message['body'][$key]);
+    // Now do some fine tuning, hackish stuff...
+    preg_match_all(LOFT_GTM_URL_REGEX_FIND, $text, $matches);
+    foreach ($matches[0] as $key => $value) {
+      
+      // Fix the url that ends with a '.',
+      // e.g., http://www.globalonenessproject.local/user/login.?utm_nooverride=1&
+      if (!empty($matches[6][$key]) && substr($matches[5][$key], -1) === '.') {
+        $find = $replace = $matches[0][$key];
+        $replace = str_replace($matches[5][$key], rtrim($matches[5][$key], '.'), $replace) . '.';
+        $text = str_replace($find, $replace, $text);
       }
     }
   }

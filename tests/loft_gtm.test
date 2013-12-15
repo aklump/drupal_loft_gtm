@@ -192,7 +192,6 @@ EOD;
 
   public function testGroup1() {
     $this->subtest__loft_gtm_mail_alter();
-    return;
     $this->subtest__theme();
     $this->subtest__html_output();
   }
@@ -200,11 +199,11 @@ EOD;
   public function subtest__loft_gtm_mail_alter() {
     $_control_message = array();
     $_control_message['body'] = array(
-      'This is the first sentence',
+      'This is the first sentence.',
       t('This one contains a link !url.', array(
         '!url' => url('user/login', array('absolute' => TRUE)),
       )),
-      t('Do not modify this link: (!url)', array(
+      t('This gets a double, oops: (!url).', array(
         '!url' => url('user/password', array('absolute' => TRUE, 'query' => array('alpha' => 'bravo','utm_nooverride' => 1))),
       )),
     );
@@ -213,14 +212,13 @@ EOD;
      * Assert outgoing mail links have the utm_nooverride appended correctly
      */
     $_control_group = 'loft_gtm_mail_alter';
-    $url = url(NULL, array('absolute' => TRUE));
-    $url = pathinfo($url);
-    $url = $url['basename'];    
+    $domain = _loft_gtm_get_domain();
+
     // Desired test result
     $control = <<<EOD
-This is the first sentence
-This one contains a link http://{$url}/user/login?utm_nooverride=1.
-Do not modify this link: (http://{$url}/user/password?alpha=bravo&utm_nooverride=1)
+This is the first sentence.
+This one contains a link http://{$domain}/user/login?utm_nooverride=1&.
+This gets a double, oops: (http://www.globalonenessproject.local/user/password?utm_nooverride=1&alpha=bravo&utm_nooverride=1).
 EOD;
 
     // The test and result
@@ -230,11 +228,58 @@ EOD;
     $this->assertIdentical($control, $result, "Assert outgoing mail links have the utm_nooverride appended correctly.", $_control_group);
     // END ASSERT
     
-    $control = "http://{$url}/user/reset/5435/1386787628/I45cbhzN2A1R66RLnd-fPC-7V8KgVFXBv7iRUUSAeYs?utm_nooverride=1";
-    $subject = array('body' => array("http://{$url}/user/reset/5435/1386787628/I45cbhzN2A1R66RLnd-fPC-7V8KgVFXBv7iRUUSAeYs"));
+    $control = "http://{$domain}/user/reset/5435/1386787628/I45cbhzN2A1R66RLnd-fPC-7V8KgVFXBv7iRUUSAeYs?utm_nooverride=1&";
+    $subject = array('body' => array("http://{$domain}/user/reset/5435/1386787628/I45cbhzN2A1R66RLnd-fPC-7V8KgVFXBv7iRUUSAeYs"));
     loft_gtm_mail_alter($subject);
     $result = implode("\n", $subject['body']);
-    $this->assertIdentical($control, $result, "Assert user reset password link is correctly formed with the added utm_nooverride param."); 
+    $this->assertIdentical($control, $result, "Assert user reset password link is correctly formed with the added utm_nooverride param.");
+
+    // Test an HTTPS domain
+    global $loft_gtm_domain;
+    $loft_gtm_domain = 'https://www.globalonenessproject.org';
+    $domain = _loft_gtm_get_domain();
+    $subject = <<<EOD
+uber,
+
+A request to reset the password for your account has been made at Global
+Oneness Project.
+
+You may now log in to www.globalonenessproject.org by clicking on this link
+or copying and pasting it in your browser:
+
+${domain}/user/reset/1/1387126142/Sd7Z7j1QklXjwbgoZArwVoyxaI4D0Ehw711HQvaeQxA
+
+This is a one-time login, so it can be used only once. It expires after one
+day and nothing will happen if it's not used.
+
+After logging in, you will be redirected to
+${domain}/user/1/edit so you can change your
+password.
+EOD;
+    $control = <<<EOD
+uber,
+
+A request to reset the password for your account has been made at Global
+Oneness Project.
+
+You may now log in to www.globalonenessproject.org?utm_nooverride=1& by clicking on this link
+or copying and pasting it in your browser:
+
+${domain}/user/reset/1/1387126142/Sd7Z7j1QklXjwbgoZArwVoyxaI4D0Ehw711HQvaeQxA?utm_nooverride=1&
+
+This is a one-time login, so it can be used only once. It expires after one
+day and nothing will happen if it's not used.
+
+After logging in, you will be redirected to
+${domain}/user/1/edit?utm_nooverride=1& so you can change your
+password.
+EOD;
+
+    $subject = array('body' => array($subject));
+    loft_gtm_mail_alter($subject);
+    $result = implode("\n", $subject['body']);
+    $this->assertIdentical($control, $result, "Assert user reset email is correctly formed with the added utm_nooverride param.");
+
   }
 
   public function subtest__theme() {
