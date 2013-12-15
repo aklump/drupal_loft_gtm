@@ -1,7 +1,7 @@
 name = Google Tag Manager API
 description = Google Tag Manager API by In the Loft Studios
 package = Analytics
-version = 7.x-1.0-rc4
+version = 7.x-1.0-rc5
 core = 7.x
 
 files[] = tests/loft_gtm.test
