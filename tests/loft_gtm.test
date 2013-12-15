@@ -192,6 +192,7 @@ EOD;
 
   public function testGroup1() {
     $this->subtest__loft_gtm_mail_alter();
+    return;
     $this->subtest__theme();
     $this->subtest__html_output();
   }
@@ -212,11 +213,14 @@ EOD;
      * Assert outgoing mail links have the utm_nooverride appended correctly
      */
     $_control_group = 'loft_gtm_mail_alter';
+    $url = url(NULL, array('absolute' => TRUE));
+    $url = pathinfo($url);
+    $url = $url['basename'];    
     // Desired test result
     $control = <<<EOD
 This is the first sentence
-This one contains a link http://dev.globalonenessproject.local/user/login?utm_nooverride=1.
-Do not modify this link: (http://dev.globalonenessproject.local/user/password?alpha=bravo&utm_nooverride=1)
+This one contains a link http://{$url}/user/login?utm_nooverride=1.
+Do not modify this link: (http://{$url}/user/password?alpha=bravo&utm_nooverride=1)
 EOD;
 
     // The test and result
@@ -225,6 +229,12 @@ EOD;
     $result = implode("\n", $subject['body']);
     $this->assertIdentical($control, $result, "Assert outgoing mail links have the utm_nooverride appended correctly.", $_control_group);
     // END ASSERT
+    
+    $control = "http://{$url}/user/reset/5435/1386787628/I45cbhzN2A1R66RLnd-fPC-7V8KgVFXBv7iRUUSAeYs?utm_nooverride=1";
+    $subject = array('body' => array("http://{$url}/user/reset/5435/1386787628/I45cbhzN2A1R66RLnd-fPC-7V8KgVFXBv7iRUUSAeYs"));
+    loft_gtm_mail_alter($subject);
+    $result = implode("\n", $subject['body']);
+    $this->assertIdentical($control, $result, "Assert user reset password link is correctly formed with the added utm_nooverride param."); 
   }
 
   public function subtest__theme() {
@@ -263,14 +273,14 @@ EOD;
 
     $account = $this->drupalCreateUser(array('loft_gtm_dev:use'));
     $this->drupalLogin($account);
-    $html = $this->drupalGet('gop-gtm/test?reset=1');
+    $html = $this->drupalGet('loft-gtm/test?reset=1');
 
     /**
      * Assert the event appears written in the html on next page load
      */
     // Desired raw text to find
     $_control_group = 'html output';
-    $html = $this->drupalGet('gop-gtm/test');
+    $html = $this->drupalGet('loft-gtm/test');
     $this->assertRaw($this->control->push, 'Assert the event appears written in the html on next page load', $_control_group);
     // END ASSERT: <front>
 

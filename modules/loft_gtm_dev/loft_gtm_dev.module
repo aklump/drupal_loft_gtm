@@ -31,7 +31,7 @@
  */
 function loft_gtm_dev_help($path, $arg) {
   switch ($path) {
-    case 'admin/config/search/gop-gtm/parser':
+    case 'admin/config/search/loft-gtm/parser':
       $help = '';
       $help .= t('<p>This page is used to generate PHP code that can be used by the API, from the DataLayer javascript provided by Google.</p>');
       return $help;
@@ -55,7 +55,7 @@ function loft_gtm_dev_permission() {
  */
 function loft_gtm_dev_menu() {
   $items = array();
-  $items['admin/config/search/gop-gtm/parser'] = array(
+  $items['admin/config/search/loft-gtm/parser'] = array(
     'title' => 'Parse Code',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('loft_gtm_dev_parser_form'),
@@ -63,7 +63,7 @@ function loft_gtm_dev_menu() {
     'type' => MENU_LOCAL_TASK,
     'file' => 'includes/loft_gtm_dev.admin.inc',
   );
-  $items['admin/config/search/gop-gtm/test'] = array(
+  $items['admin/config/search/loft-gtm/test'] = array(
     'title' => 'Test Event',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('loft_gtm_dev_event_test_form'),
@@ -71,9 +71,9 @@ function loft_gtm_dev_menu() {
     'type' => MENU_LOCAL_TASK,
     'file' => 'includes/loft_gtm_dev.admin.inc',
   );
-  $items['gop-gtm/test'] = array(
+  $items['loft-gtm/test'] = array(
     'title' => 'Test Page',
-    'page callback' => 'gop_gtm_dev_test_page',
+    'page callback' => 'loft_gtm_dev_test_page',
     'page arguments' => array(),
     'access arguments' => array('loft_gtm_dev:use'),
     'type' => MENU_CALLBACK,
@@ -123,20 +123,20 @@ function loft_gtm_dev_form_loft_gtm_admin_settings_alter(&$form, $form_state, $f
 /**
  * Return a test page that first an event
  */
-function gop_gtm_dev_test_page() {
+function loft_gtm_dev_test_page() {
 
   $build = array();
 
   // Reset
   if (!empty($_GET['reset'])) {
-    unset($_SESSION['gop_gtm_dev']['test_page']);
+    unset($_SESSION['loft_gtm_dev']['test_page']);
     $build[] = array('#markup' => t("Test has been reset. Click <a href='!url'>this link</a> to start over.", array(
       '!url' => url($_GET['q']),
     )));
   }
 
   // First Run Fire off the Event
-  elseif (empty($_SESSION['gop_gtm_dev']['test_page'])) {
+  elseif (empty($_SESSION['loft_gtm_dev']['test_page'])) {
     $event = array (
       '#method' => 'push',
       '#params' =>
@@ -148,7 +148,7 @@ function gop_gtm_dev_test_page() {
       ),
     );
     loft_gtm_queue_add($event);
-    $_SESSION['gop_gtm_dev']['test_page'] = 1;
+    $_SESSION['loft_gtm_dev']['test_page'] = 1;
     $build[] = array('#markup' => 'An event has been triggered, check source code for javascript that looks like this:.');
     $build[] = array(
       '#theme' => 'loft_gtm_datalayer',
@@ -162,7 +162,7 @@ function gop_gtm_dev_test_page() {
 
   // Subsequent Runs, no event fired
   else {
-    $build[] = array('#markup' => t("Assert source code does not contain any code.  To start this test over you need to run the following php: <p><code>&lt;?php unset(\$_SESSION['gop_gtm_dev']['test_page'])?> </code></p> or append <code>&reset=1</code> to the url , or click <a href='!url'>this reset link</a>.", array(
+    $build[] = array('#markup' => t("Assert source code does not contain any code.  To start this test over you need to run the following php: <p><code>&lt;?php unset(\$_SESSION['loft_gtm_dev']['test_page'])?> </code></p> or append <code>&reset=1</code> to the url , or click <a href='!url'>this reset link</a>.", array(
       '!url' => url($_GET['q'], array('query' => array(
         'reset' => 1,
       ))),

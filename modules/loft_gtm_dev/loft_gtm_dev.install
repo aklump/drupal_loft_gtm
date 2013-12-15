@@ -31,7 +31,7 @@ function loft_gtm_dev_uninstall() {
  */
 function loft_gtm_dev_enable() {
   // Message about module settings
-  drupal_set_message(t('You may adjust settings for Google Tag Manager API Developer Tools by visiting <a href="@url">@url</a>.', array('@url' => url('admin/config/search/gop-gtm'))));
+  drupal_set_message(t('You may adjust settings for Google Tag Manager API Developer Tools by visiting <a href="@url">@url</a>.', array('@url' => url('admin/config/search/loft-gtm'))));
 }
 
 /** @} */ //end of group loft_gtm_dev

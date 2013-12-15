@@ -9,7 +9,7 @@ Google Tag Manager API Moduel for Drupal by In the Loft Studios
 1. Goto Administer > Site Building > Modules and enable this module.
 
 ##Configuration
-1. Visit `admin/config/search/gop-gtm` to configure.
+1. Visit `admin/config/search/loft-gtm` to configure.
 
 ### For form submission events
 You will add to the queue in the submission hook of a form; the queue will then be emptied on the next page load and the events thus fired.
@@ -44,7 +44,6 @@ Here is some example code to send an event based on the contact id of the contac
       );
       loft_gtm_queue_add($event);
     }
-
 
 ##Usage
 1. Anytime you want to output a GTM event in HTML you will use loft_gtm_queue_add() to add teh event.  All events added during processing will be written in html on the next output.

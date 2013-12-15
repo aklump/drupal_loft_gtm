@@ -11,7 +11,7 @@
  * @var LOFT_GTM_INJECTION_MODE
  *
  * This setting answers the question of how the dataLayer.push events are
-   processed in the DOM.
+ * processed in the DOM.
  *
  * 1 = written in the page footer as inline js
  * 2 = inserted via ajax as a direct call to the dataLayer object
@@ -47,7 +47,7 @@ function loft_gtm_process_page(&$vars) {
     drupal_add_js(drupal_get_path('module', 'loft_gtm') . '/loft_gtm.js');
     drupal_add_js(array(
       'loftGTM' => array(
-        'url' => url('gop-gtm/ajax'),
+        'url' => url('loft-gtm/ajax'),
         'method' => $mode == 1 ? 'clear' : 'process',
         'token' => drupal_get_token('loft_gtm'),
         'ids' => json_encode(array_keys($queue)),
@@ -124,7 +124,7 @@ function loft_gtm_permission() {
 function loft_gtm_menu() {
   $items = array();
 
-  $items['admin/config/search/gop-gtm'] = array(
+  $items['admin/config/search/loft-gtm'] = array(
     'title' => 'Google Tag Manager',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('loft_gtm_admin_settings'),
@@ -132,12 +132,12 @@ function loft_gtm_menu() {
     'type' => MENU_NORMAL_ITEM,
     'file' => 'includes/loft_gtm.admin.inc',
   );
-  $items['admin/config/search/gop-gtm/settings'] = array(
+  $items['admin/config/search/loft-gtm/settings'] = array(
     'title' => 'Settings',
     'type' => MENU_DEFAULT_LOCAL_TASK,
     'weight' => -10,
   );
-  $items['gop-gtm/ajax'] = array(
+  $items['loft-gtm/ajax'] = array(
     'page callback' => 'loft_gtm_ajax_handler',
     'access arguments' => array('access content'),
     'type' => MENU_CALLBACK,
@@ -149,8 +149,8 @@ function loft_gtm_menu() {
 /**
  * Handles the ajax call.
  *
- * Expects to receive from an url like: gop-gtm/ajax/queue/process/ajax arg(2)
-   becomes the method and then we call function: _loft_gtm_ajax_handler_queue()
+ * Expects to receive from an url like: loft-gtm/ajax/queue/process/ajax arg(2)
+ * becomes the method and then we call function: _loft_gtm_ajax_handler_queue()
  */
 function loft_gtm_ajax_handler() {
   $args = func_get_args();
@@ -236,6 +236,19 @@ function loft_gtm_get_path($path = '', $options = array()) {
 }
 
 /**
+ * Implements hook_module_implements_alter().
+ */
+function loft_gtm_module_implements_alter(&$implementations, $hook) {
+  if ($hook == 'mail_alter') {
+    // To move an item to the end of the array so it gets implemented last, we
+    // remove it and then add it.
+    $group = $implementations['loft_gtm'];
+    unset($implementations['loft_gtm']);
+    $implementations['loft_gtm'] = $group;
+  }
+}
+
+/**
  * Implements hook_mail_alter().
  *
  * @param array &$message
@@ -243,7 +256,7 @@ function loft_gtm_get_path($path = '', $options = array()) {
  * @tested
  */
 function loft_gtm_mail_alter(&$message) {
-  if (empty($message['body'])) {
+  if (empty($message['body']) || !is_array($message['body'])) {
     return;
   }
 
