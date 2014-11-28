@@ -1,0 +1,38 @@
+<?php
+/**
+ * @file
+ * Provides a simpletest test runner for PhpUnit tests in loft_gtm
+ *
+ * Normally this file does not need to be altered for a Drupal module.
+ *
+ * TESTS SHOULD NOT BE ADDED TO THIS FILE, instead use the phpunit directory
+ * and create test class files as you normally would.  This file serves to
+ * integrate that directory with the Drupal simpletest UI.
+ *
+ * @see http://www.intheloftstudios.com/packages/drupal/loft_testing
+ * 
+ * @ingroup loft_gtm
+ * @{
+ */
+use AKlump\LoftTesting\Simpletest\PhpUnitTestProxy as DrupalUnitTestCase;
+
+class LoftGtmPhpUnitTestProxy extends DrupalUnitTestCase {
+
+  public function setUp() {
+    // Add one or more directories where phpunit should be run
+    $this->proxyAddPath(dirname(__FILE__) . '/phpunit');
+    parent::setUp();
+  }
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Loft Gtm PhpUnit Proxy',
+      'description' => 'Test runner for PhpUnit tests in the Loft Gtm module.',
+      'group' => 'Google Tag Manager API',
+    );
+  }
+
+  public function testProxy() {
+    $this->proxyRun();
+  }  
+}

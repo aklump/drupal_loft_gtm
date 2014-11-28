@@ -288,7 +288,7 @@ function loft_gtm_mail_alter(&$message) {
   }
 
   // Determine the base url of the website
-  $url = _loft_gtm_get_domain();
+  // $url = _loft_gtm_get_domain();
 
   foreach (array_keys($message['body']) as $key) {
 
@@ -299,6 +299,14 @@ function loft_gtm_mail_alter(&$message) {
 
     // Now do some fine tuning, hackish stuff...
     preg_match_all(LOFT_GTM_URL_REGEX_FIND, $text, $matches);
+    
+    // Email address shouldn't have this appended
+    foreach ($matches[1] as $key => $value) {
+      if (valid_email_address($value)) {
+        $text = str_replace($matches[0][$key], $value, $text);
+      }
+    }
+
     foreach ($matches[0] as $key => $value) {
       
       // Fix the url that ends with a '.',

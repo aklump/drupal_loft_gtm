@@ -5,3 +5,5 @@ version = 7.x-1.0-rc7
 core = 7.x
 
 files[] = tests/loft_gtm.test
+files[] = tests/loft_gtm.units.test
+files[] = tests/loft_gtm.phpunit.test
