@@ -49,6 +49,10 @@
   Drupal.behaviors.loftGTM = Drupal.behaviors.loftGTM || {};
   Drupal.behaviors.loftGTM.attach = function (context, settings) {
 
+    if (typeof settings.loftGTM.token === undefined) {
+      throw "missing loftGTM token.";
+    }
+
     // Process the queue
     if (settings.loftGTM.ids.length) {
       Drupal.loftGTM[settings.loftGTM.method](settings.loftGTM.ids);
