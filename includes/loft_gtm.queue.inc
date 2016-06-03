@@ -38,7 +38,8 @@ function _loft_gtm_ajax_handler_queue() {
       break;
     case 'process':
       if (($queue = loft_gtm_queue_add())
-          && ($queue = array_intersect_key($queue, array_flip($ids)))) {
+        && ($queue = array_intersect_key($queue, array_flip($ids)))
+      ) {
         loft_gtm_queue_clear(array_keys($queue));
       }
       $json = array();

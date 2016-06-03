@@ -19,11 +19,26 @@
 define('LOFT_GTM_INJECTION_MODE', 1);
 
 /**
+ * @var LOFT_GTM_ENABLED
+ *
+ * The default value of the event reporting switch.
+ */
+define('LOFT_GTM_ENABLED', TRUE);
+
+/**
+ * @var LOFT_GTM_LOGGING
+ *
+ * The default value of the loggin switch.
+ */
+define('LOFT_GTM_LOGGING', TRUE);
+
+/**
  * @var LOFT_GTM_CODE
  */
 define('LOFT_GTM_CODE', '');
 
 define('LOFT_GTM_URL_REGEX_FIND', '/(?:(([A-Za-z]{3,9}:(?:\/\/)?)(?:[-;:&=\+\$,\w]+@)?([A-Za-z0-9.-]+)|(?:www.|[-;:&=\+\$,\w]+@)[A-Za-z0-9.-]+)((\/[\+~%\/.\w-_]*)?\??([-\+=&;%@.\w_]*)(#?(?:[\w]*)))?)/i');
+
 define('LOFT_GTM_URL_REGEX_REPLACE', '${1}${5}?utm_nooverride=1&${6}${7}');
 
 /**
@@ -41,12 +56,19 @@ function loft_gtm_is_active() {
  * Implements hook_process_page().
  */
 function loft_gtm_process_page(&$vars) {
+
+  drupal_add_js(drupal_get_path('module', 'loft_gtm') . '/loft_gtm.js');
+  drupal_add_js(array(
+    'loftGTM' => array(
+      'enabled' => variable_get('loft_gtm_enabled', LOFT_GTM_ENABLED),
+      'logging' => variable_get('loft_gtm_logging', LOFT_GTM_LOGGING),
+    ),
+  ), 'setting');
+
   // Add any queued js
   if ($queue = loft_gtm_queue_add()) {
 
     $mode = variable_get('loft_gtm_injection_mode', LOFT_GTM_INJECTION_MODE);
-
-    drupal_add_js(drupal_get_path('module', 'loft_gtm') . '/loft_gtm.js');
     drupal_add_js(array(
       'loftGTM' => array(
         'url'    => url('loft-gtm/ajax'),
@@ -193,6 +215,8 @@ function loft_gtm_ajax_handler() {
  * @tested
  */
 function loft_gtm_queue_add($data = NULL) {
+  
+  // TODO This should be done using drupal_add_js.
   if (!isset($_SESSION['loft_gtm']['queue'])) {
     $_SESSION['loft_gtm']['queue'] = array();
   }

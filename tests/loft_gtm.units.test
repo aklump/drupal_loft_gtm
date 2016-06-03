@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * Provides unit tests for loft_gtm
@@ -6,8 +7,36 @@
  * @ingroup loft_gtm
  * @{
  */
-
 class LoftGTMUnitTestCase extends DrupalUnitTestCase {
+
+  public static function getInfo() {
+    return array(
+      'name'        => 'Google Tag Manager API Unit tests',
+      'description' => 'Unit testing for the Google Tag Manager API module.',
+      'group'       => 'Google Tag Manager API',
+    );
+  }
+
+  public function setUp($modules = array()) {
+    parent::setUp($modules);
+    module_load_include('inc', 'loft_gtm', 'includes/loft_gtm.queue');
+    $this->control = new \stdClass;
+    $this->control->php = array(
+      '#method' => 'push',
+      '#params' =>
+        array(
+          'event'    => 'eventTracker',
+          'eventCat' => 'Contact',
+          'eventAct' => 'Request',
+          'eventLbl' => 'General Inquiries',
+        ),
+    );
+  }
+
+  public function testGroup1() {
+    $this->subtest__loft_gtm_queue();
+    $this->subtest__scope();
+  }
 
   public function subtest__loft_gtm_queue() {
     unset($_SESSION['loft_gtm']['queue']);
@@ -29,7 +58,10 @@ class LoftGTMUnitTestCase extends DrupalUnitTestCase {
      */
     $_control_group = 'loft_gtm_queue_add';
     // Desired test result
-    $control = $this->control->php + array('#theme' => 'loft_gtm_datalayer', '#scope' => 'footer');
+    $control = $this->control->php + array(
+        '#theme' => 'loft_gtm_datalayer',
+        '#scope' => 'footer',
+      );
     $control = array(
       0 . md5(serialize($this->control->php)) => $control,
     );
@@ -39,7 +71,10 @@ class LoftGTMUnitTestCase extends DrupalUnitTestCase {
     $this->assertIdentical($control, $result, "Assert when loft_gtm_queue_add is called with an argument is it returned as the first element of the return array", $_control_group);
 
     // Assert when the same event is added, two total events are returned
-    $control = $this->control->php + array('#theme' => 'loft_gtm_datalayer', '#scope' => 'footer');
+    $control = $this->control->php + array(
+        '#theme' => 'loft_gtm_datalayer',
+        '#scope' => 'footer',
+      );
     $control = array(
       0 . md5(serialize($this->control->php)) => $control,
       1 . md5(serialize($this->control->php)) => $control,
@@ -72,7 +107,10 @@ class LoftGTMUnitTestCase extends DrupalUnitTestCase {
     $_control_group = 'loft_gtm_queue_clear';
     // Desired test result
     $subject = 0 . md5(serialize($this->control->php));
-    $control = $this->control->php + array('#theme' => 'loft_gtm_datalayer', '#scope' => 'footer');
+    $control = $this->control->php + array(
+        '#theme' => 'loft_gtm_datalayer',
+        '#scope' => 'footer',
+      );
     $control = array(
       1 . md5(serialize($this->control->php)) => $control,
     );
@@ -127,33 +165,5 @@ class LoftGTMUnitTestCase extends DrupalUnitTestCase {
     $result = $return[$id]['#scope'];
     $this->assertIdentical($control, $result, "Assert when method is blank the scope is set to header", $_control_group);
     // END ASSERT
-  }
-
-  public static function getInfo() {
-    return array(
-      'name' => 'Google Tag Manager API Unit tests',
-      'description' => 'Unit testing for the Google Tag Manager API module.',
-      'group' => 'Google Tag Manager API',
-    );
-  }
-
-  public function setUp($modules = array()) {
-    parent::setUp($modules);
-    module_load_include('inc', 'loft_gtm', 'includes/loft_gtm.queue');
-    $this->control->php = array (
-      '#method' => 'push',
-      '#params' =>
-      array (
-        'event' => 'eventTracker',
-        'eventCat' => 'Contact',
-        'eventAct' => 'Request',
-        'eventLbl' => 'General Inquiries',
-      ),
-    );
-  }
-
-  public function testGroup1() {
-    $this->subtest__loft_gtm_queue();
-    $this->subtest__scope();
   }
 }

@@ -45,12 +45,18 @@ Here is some example code to send an event based on the contact id of the contac
       loft_gtm_queue_add($event);
     }
 
-##Usage
-1. Anytime you want to output a GTM event in HTML you will use loft_gtm_queue_add() to add teh event.  All events added during processing will be written in html on the next output.
-1. Important to note that the queue is cleared via ajax, so repeatedly viewing source will show you a growing queue.  That is inaccurate an only occurs because the ajax is not clearing the queue.
+## Usage via Javascript
+1. Simply call one function:
+
+        Drupal.loftGTM.push(event, category, action, label, value);
+    
+## Usage via PHP
+1. Anytime you want to output a GTM event in HTML you will use `loft_gtm_queue_add()` to add the event.  All events added during processing will be written in html on the next output.
+1. Important to note that the queue is cleared via ajax, so repeatedly viewing source will show you a growing queue.  That is inaccurate and only occurs because the ajax is not clearing the queue.
 
 ##API
-1. loft_gtm_queue_add()
+1. Drupal.loftGTM.push
+1. `loft_gtm_queue_add()`
 
 ##Contact
 * **In the Loft Studios**

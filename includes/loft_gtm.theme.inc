@@ -11,7 +11,7 @@
  * Formats a datalayer js snippet.
  *
  * @param array $vars
- * - event:
+ *   - event:
  *   - #method: string
  *   - #params: array
  *
@@ -23,7 +23,7 @@ function theme_loft_gtm_datalayer($vars) {
   $event = $vars['event'];
 
   $output = '';
-  $output .= 'if (typeof dataLayer !== "undefined") {';
+  $output .= "if (typeof dataLayer !== 'undefined') {";
   if (!empty($event['#method'])) {
     $output .= 'dataLayer.' . $event['#method'] . '(' . json_encode($event['#params']) . ');';
   }

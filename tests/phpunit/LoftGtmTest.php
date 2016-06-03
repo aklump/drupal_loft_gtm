@@ -7,7 +7,8 @@
 /**
  * @var DRUPAL_ROOT
  */
-define('DRUPAL_ROOT', '/Library/Projects/globalonenessproject/site-dev/public_html');
+define('DRUPAL_ROOT', realpath(dirname(__FILE__) . '/../../../../../../../'));
+
 require_once dirname(__FILE__) . '/../../../loft_testing/includes/bootstrap.inc';
 
 class LoftGtmTest extends \AKlump\LoftTesting\PhpUnit\TestCase {
@@ -23,7 +24,24 @@ class LoftGtmTest extends \AKlump\LoftTesting\PhpUnit\TestCase {
     $subject = "This gets a double, oops: (http://www.globalonenessproject.com/user/password?alpha=bravo).";
     $this->assertMessageAlteredSame("This gets a double, oops: (http://www.globalonenessproject.com/user/password?utm_nooverride=1&alpha=bravo).", $subject);
   }
-  
+
+  /**
+   * Asserts a message is altered correctly.
+   *
+   * @param  string $control The desired outcome message
+   * @param  string $subject [description]
+   *
+   * @return [type]          [description]
+   */
+  public function assertMessageAlteredSame($control, $subject) {
+    $message['body'][0] = $subject;
+    loft_gtm_mail_alter($message);
+    $this->assertSame($control, $message['body'][0]);
+  }
+
+  // custom assertions
+  // 
+
   public function testProtectEmailAddresses() {
     $subject = "This email was rerouted.
 Web site: http://dev.globalonenessproject.local
@@ -38,24 +56,6 @@ Originally to: bethany@globalonenessproject.org
 -----------------------";
     $this->assertMessageAlteredSame($control, $subject);
   }
-
-  // custom assertions
-  // 
-  
-  /**
-   * Asserts a message is altered correctly.
-   *
-   * @param  string $control  The desired outcome message
-   * @param  string $subject [description]
-   *
-   * @return [type]          [description]
-   */
-  public function assertMessageAlteredSame($control, $subject) {
-    $message['body'][0] = $subject;
-    loft_gtm_mail_alter($message);
-    $this->assertSame($control, $message['body'][0]);    
-  }
-  
 
   public function setUp() {
     parent::setUp(array('loft_gtm', 'path'));

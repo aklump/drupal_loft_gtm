@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * Automated tests for loft_gtm
@@ -6,8 +7,44 @@
  * @ingroup loft_gtm
  * @{
  */
-
 class LoftGTMWebTestCase extends DrupalWebTestCase {
+
+  public static function getInfo() {
+    return array(
+      'name'        => 'Google Tag Manager API Integration tests',
+      'description' => 'Integration testing for the Google Tag Manager API module.',
+      'group'       => 'Google Tag Manager API',
+    );
+  }
+
+  public function setUp($modules = array()) {
+    $modules[] = 'loft_gtm';
+    $modules[] = 'loft_gtm_dev';
+    parent::setUp($modules);
+
+    variable_set('loft_gtm_code', '<!-- Google Tag Manager -->');
+
+    $this->control->php = array(
+      '#method' => 'push',
+      '#params' =>
+        array(
+          'event'    => 'eventTracker',
+          'eventCat' => 'Contact',
+          'eventAct' => 'Request',
+          'eventLbl' => 'General Inquiries',
+        ),
+    );
+    $this->control->push = 'dataLayer.push({"event":"eventTracker","eventCat":"Contact","eventAct":"Request","eventLbl":"General Inquiries"});';
+    $this->control->dataLayer = <<<EOD
+dataLayer = {"event":"eventTracker","eventCat":"Contact","eventAct":"Request","eventLbl":"General Inquiries"};
+EOD;
+  }
+
+  public function testGroup1() {
+    $this->subtest__loft_gtm_mail_alter();
+    $this->subtest__theme();
+    $this->subtest__html_output();
+  }
 
   public function subtest__loft_gtm_mail_alter() {
     $_control_message = array();
@@ -17,7 +54,13 @@ class LoftGTMWebTestCase extends DrupalWebTestCase {
         '!url' => url('user/login', array('absolute' => TRUE)),
       )),
       t('This gets a double, oops: (!url).', array(
-        '!url' => url('user/password', array('absolute' => TRUE, 'query' => array('alpha' => 'bravo','utm_nooverride' => 1))),
+        '!url' => url('user/password', array(
+          'absolute' => TRUE,
+          'query'    => array(
+            'alpha'          => 'bravo',
+            'utm_nooverride' => 1,
+          ),
+        )),
       )),
     );
 
@@ -42,7 +85,7 @@ EOD;
     $this->assertTrue($result, $result);
     $this->assertIdentical($control, $result, "Assert outgoing mail links have the utm_nooverride appended correctly.", $_control_group);
     // END ASSERT
-    
+
     $control = "http://{$domain}/user/reset/5435/1386787628/I45cbhzN2A1R66RLnd-fPC-7V8KgVFXBv7iRUUSAeYs?utm_nooverride=1&";
     $subject = array('body' => array("http://{$domain}/user/reset/5435/1386787628/I45cbhzN2A1R66RLnd-fPC-7V8KgVFXBv7iRUUSAeYs"));
     loft_gtm_mail_alter($subject);
@@ -149,42 +192,5 @@ EOD;
      * a way to test this here. I tried calling the ajax path directly but the
      * token isn't working across curl.
      */
-  }
-
-  public static function getInfo() {
-    return array(
-      'name' => 'Google Tag Manager API Integration tests',
-      'description' => 'Integration testing for the Google Tag Manager API module.',
-      'group' => 'Google Tag Manager API',
-    );
-  }
-
-  public function setUp($modules = array()) {
-    $modules[] = 'loft_gtm';
-    $modules[] = 'loft_gtm_dev';
-    parent::setUp($modules);
-
-    variable_set('loft_gtm_code', '<!-- Google Tag Manager -->');
-
-    $this->control->php = array (
-      '#method' => 'push',
-      '#params' =>
-      array (
-        'event' => 'eventTracker',
-        'eventCat' => 'Contact',
-        'eventAct' => 'Request',
-        'eventLbl' => 'General Inquiries',
-      ),
-    );
-    $this->control->push = 'dataLayer.push({"event":"eventTracker","eventCat":"Contact","eventAct":"Request","eventLbl":"General Inquiries"});';
-    $this->control->dataLayer = <<<EOD
-dataLayer = {"event":"eventTracker","eventCat":"Contact","eventAct":"Request","eventLbl":"General Inquiries"};
-EOD;
-  }
-
-  public function testGroup1() {
-    $this->subtest__loft_gtm_mail_alter();
-    $this->subtest__theme();
-    $this->subtest__html_output();
   }
 }

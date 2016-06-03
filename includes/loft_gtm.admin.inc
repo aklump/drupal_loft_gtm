@@ -1,7 +1,7 @@
 <?php
 /**
  * @file
- * Administration page callbacks for the loft_gtm module.
+ * Provides administration functions for the loft_gtm module.
  *
  * @ingroup loft_gtm
  * @{
@@ -11,35 +11,48 @@
  * Form builder. Configure my_module.
  *
  * @ingroup forms
- * @see system_settings_form()
+ * @see     system_settings_form()
  */
 function loft_gtm_admin_settings($form, &$form_state) {
   $code = variable_get('loft_gtm_code', LOFT_GTM_CODE);
   $form['init'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('General Settings'),
+    '#type'        => 'fieldset',
+    '#title'       => t('General Settings'),
     '#collapsible' => TRUE,
-    '#collapsed' => !empty($code),
+    '#collapsed'   => !empty($code),
   );
+
+  $form['loft_gtm_enabled'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Enable Google event reporting'),
+    '#default_value' => variable_get('loft_gtm_enabled', LOFT_GTM_ENABLED),
+  );
+
+  $form['loft_gtm_logging'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Enable Google event logging (dev only)'),
+    '#default_value' => variable_get('loft_gtm_logging', LOFT_GTM_LOGGING),
+  );
+
   $form['init']['loft_gtm_code'] = array(
-    '#type' => 'textarea',
-    '#title' => t('Google Tag Manager Code'),
-    '#description' => t('Enter your code from Google here. To obtain your code or register for an account visit <a href="@url">Google.com</a>.', array(
+    '#type'          => 'textarea',
+    '#title'         => t('Google Tag Manager Code'),
+    '#description'   => t('Enter your code from Google here. To obtain your code or register for an account visit <a href="@url">Google.com</a>.', array(
       '@url' => url('http://www.google.com/tagmanager/'),
     )),
     '#default_value' => $code,
-    '#required' => TRUE,
-    '#rows' => 10,
-    '#resizable' => TRUE,
+    '#required'      => TRUE,
+    '#rows'          => 10,
+    '#resizable'     => TRUE,
   );
 
   $form['loft_gtm_injection_mode'] = array(
-    '#type' => 'radios',
-    '#title' => t('DataLayer Processing'),
+    '#type'          => 'radios',
+    '#title'         => t('DataLayer Processing'),
     '#default_value' => variable_get('loft_gtm_injection_mode', LOFT_GTM_INJECTION_MODE),
-    '#options' => array(
+    '#options'       => array(
       1 => t('Written in the HTML'),
-      2 => t('Processed via AJAX')
+      2 => t('Processed via AJAX'),
     ),
   );
 

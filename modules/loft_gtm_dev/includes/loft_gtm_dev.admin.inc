@@ -15,8 +15,8 @@
  * @param array $form
  * @param array &$form_state
  *
- * @see loft_gtm_dev_parser_form_validate()
- * @see loft_gtm_dev_parser_form_submit()
+ * @see     loft_gtm_dev_parser_form_validate()
+ * @see     loft_gtm_dev_parser_form_submit()
  * @ingroup forms
  */
 function loft_gtm_dev_parser_form($form, &$form_state) {
@@ -26,22 +26,22 @@ function loft_gtm_dev_parser_form($form, &$form_state) {
 
   if (isset($form_state['storage'])) {
     $form['json_result'] = array(
-      '#type' => 'textarea',
-      '#title' => t('Result'),
+      '#type'        => 'textarea',
+      '#title'       => t('Result'),
       '#description' => t('Add to the appropriate hook_form_submit().'),
-      '#value' => $form_state['storage']['output'],
-      '#rows' => 20,
-      '#resizable' => TRUE,
+      '#value'       => $form_state['storage']['output'],
+      '#rows'        => 20,
+      '#resizable'   => TRUE,
     );
   }
 
   $form['input'] = array(
-    '#type' => 'textarea',
-    '#title' => t('Enter snippet'),
+    '#type'          => 'textarea',
+    '#title'         => t('Enter snippet'),
     '#default_value' => isset($form_state['storage']['input']) ? $form_state['storage']['input'] : '',
-    '#required' => TRUE,
-    '#rows' => 5,
-    '#resizable' => TRUE,
+    '#required'      => TRUE,
+    '#rows'          => 5,
+    '#resizable'     => TRUE,
   );
 
   //$form['callback_params'] = array(
@@ -52,21 +52,21 @@ function loft_gtm_dev_parser_form($form, &$form_state) {
   //);
 
   $form['target_form'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Form ID'),
+    '#type'          => 'textfield',
+    '#title'         => t('Form ID'),
     '#default_value' => isset($form_state['storage']['target_form']) ? $form_state['storage']['target_form'] : 'my_form',
-    '#required' => TRUE,
+    '#required'      => TRUE,
   );
 
   $form['loft_gtm_dev_target_module'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Target Module'),
+    '#type'          => 'textfield',
+    '#title'         => t('Target Module'),
     '#default_value' => variable_get('loft_gtm_dev_target_module', ''),
-    '#required' => TRUE,
+    '#required'      => TRUE,
   );
 
   $form['submit'] = array(
-    '#type' => 'submit',
+    '#type'  => 'submit',
     '#value' => t('Parse Now'),
   );
 
@@ -82,7 +82,8 @@ function loft_gtm_dev_parser_form($form, &$form_state) {
 function loft_gtm_dev_parser_form_validate($form, &$form_state) {
   $values = $form_state['values'];
   if (!preg_match('/' . $form['#regex'] . '/s', $values['input'])
-      && !preg_match('/' . $form['#regex_data_layer'] . '/s', $values['input'])) {
+    && !preg_match('/' . $form['#regex_data_layer'] . '/s', $values['input'])
+  ) {
     form_set_error('input', t('Invalid input'));
   }
 }
@@ -115,7 +116,7 @@ function loft_gtm_dev_parser_form_submit($form, &$form_state) {
   foreach ($parsed['#params'] as $key => $value) {
     if (in_array($key, $callback_params)) {
       $parsed['#params'][$key] = array(
-        'callback' => 't',
+        'callback'           => 't',
         'callback arguments' => array($value),
       );
     }
@@ -144,7 +145,7 @@ function _{$module}_{$form}_submit(\$form, &\$form_state) {
 EOD;
 
   $form_state['storage'] = array(
-    'input' => $form_state['values']['input'],
+    'input'  => $form_state['values']['input'],
     'output' => $parsed,
   );
 }
@@ -157,23 +158,23 @@ EOD;
  * @param array $form
  * @param array &$form_state
  *
- * @see loft_gtm_dev_event_test_form_validate()
- * @see loft_gtm_dev_event_test_form_submit()
+ * @see     loft_gtm_dev_event_test_form_validate()
+ * @see     loft_gtm_dev_event_test_form_submit()
  * @ingroup forms
  */
 function loft_gtm_dev_event_test_form($form, &$form_state) {
 
   $form['event'] = array(
-    '#type' => 'textarea',
-    '#title' => t('Enter the event code array'),
+    '#type'          => 'textarea',
+    '#title'         => t('Enter the event code array'),
     '#default_value' => isset($_SESSION['loft_gtm_dev']['test_event']) ? $_SESSION['loft_gtm_dev']['test_event'] : '',
-    '#required' => TRUE,
-    '#rows' => 10,
-    '#resizable' => TRUE,
+    '#required'      => TRUE,
+    '#rows'          => 10,
+    '#resizable'     => TRUE,
   );
 
   $form['submit'] = array(
-    '#type' => 'submit',
+    '#type'  => 'submit',
     '#value' => t('Fire Event'),
   );
 
