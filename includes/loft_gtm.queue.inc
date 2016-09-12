@@ -70,6 +70,9 @@ function loft_gtm_queue_clear($ids) {
   if (!is_array($ids)) {
     $ids = array($ids);
   }
+  if (empty($_SESSION['loft_gtm']['queue'])) {
+    $_SESSION['loft_gtm']['queue'] = array();
+  }
   $_SESSION['loft_gtm']['queue'] = array_diff_key($_SESSION['loft_gtm']['queue'], array_flip($ids));
 
   return $_SESSION['loft_gtm']['queue'];
