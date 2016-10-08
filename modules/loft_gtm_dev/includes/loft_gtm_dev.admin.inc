@@ -19,58 +19,59 @@
  * @see     loft_gtm_dev_parser_form_submit()
  * @ingroup forms
  */
-function loft_gtm_dev_parser_form($form, &$form_state) {
+function loft_gtm_dev_parser_form($form, &$form_state)
+{
 
-  $form['#regex'] = '(?:<script type="text\/javascript">\s*)?dataLayer\.(push)\((.*)\)(?:;?\s*<\/script>)?';
-  $form['#regex_data_layer'] = '()dataLayer\s*=\s*(\[{.*}\])';
+    $form['#regex'] = '(?:<script type="text\/javascript">\s*)?dataLayer\.(push)\((.*)\)(?:;?\s*<\/script>)?';
+    $form['#regex_data_layer'] = '()dataLayer\s*=\s*(\[{.*}\])';
 
-  if (isset($form_state['storage'])) {
-    $form['json_result'] = array(
-      '#type'        => 'textarea',
-      '#title'       => t('Result'),
-      '#description' => t('Add to the appropriate hook_form_submit().'),
-      '#value'       => $form_state['storage']['output'],
-      '#rows'        => 20,
-      '#resizable'   => TRUE,
+    if (isset($form_state['storage'])) {
+        $form['json_result'] = array(
+            '#type'        => 'textarea',
+            '#title'       => t('Result'),
+            '#description' => t('Add to the appropriate hook_form_submit().'),
+            '#value'       => $form_state['storage']['output'],
+            '#rows'        => 20,
+            '#resizable'   => true,
+        );
+    }
+
+    $form['input'] = array(
+        '#type'          => 'textarea',
+        '#title'         => t('Enter snippet'),
+        '#default_value' => isset($form_state['storage']['input']) ? $form_state['storage']['input'] : '',
+        '#required'      => true,
+        '#rows'          => 5,
+        '#resizable'     => true,
     );
-  }
 
-  $form['input'] = array(
-    '#type'          => 'textarea',
-    '#title'         => t('Enter snippet'),
-    '#default_value' => isset($form_state['storage']['input']) ? $form_state['storage']['input'] : '',
-    '#required'      => TRUE,
-    '#rows'          => 5,
-    '#resizable'     => TRUE,
-  );
+    //$form['callback_params'] = array(
+    //  '#type' => 'textfield',
+    //  '#description' => t('Enter a list of method parameter keys that should be configured for callbacks'),
+    //  '#title' => t('Callback Parameters'),
+    //  '#default_value' => '',
+    //);
 
-  //$form['callback_params'] = array(
-  //  '#type' => 'textfield',
-  //  '#description' => t('Enter a list of method parameter keys that should be configured for callbacks'),
-  //  '#title' => t('Callback Parameters'),
-  //  '#default_value' => '',
-  //);
+    $form['target_form'] = array(
+        '#type'          => 'textfield',
+        '#title'         => t('Form ID'),
+        '#default_value' => isset($form_state['storage']['target_form']) ? $form_state['storage']['target_form'] : 'my_form',
+        '#required'      => true,
+    );
 
-  $form['target_form'] = array(
-    '#type'          => 'textfield',
-    '#title'         => t('Form ID'),
-    '#default_value' => isset($form_state['storage']['target_form']) ? $form_state['storage']['target_form'] : 'my_form',
-    '#required'      => TRUE,
-  );
+    $form['loft_gtm_dev_target_module'] = array(
+        '#type'          => 'textfield',
+        '#title'         => t('Target Module'),
+        '#default_value' => variable_get('loft_gtm_dev_target_module', ''),
+        '#required'      => true,
+    );
 
-  $form['loft_gtm_dev_target_module'] = array(
-    '#type'          => 'textfield',
-    '#title'         => t('Target Module'),
-    '#default_value' => variable_get('loft_gtm_dev_target_module', ''),
-    '#required'      => TRUE,
-  );
+    $form['submit'] = array(
+        '#type'  => 'submit',
+        '#value' => t('Parse Now'),
+    );
 
-  $form['submit'] = array(
-    '#type'  => 'submit',
-    '#value' => t('Parse Now'),
-  );
-
-  return $form;
+    return $form;
 }
 
 /**
@@ -79,13 +80,14 @@ function loft_gtm_dev_parser_form($form, &$form_state) {
  * @see loft_gtm_dev_parser_form()
  * @see loft_gtm_dev_parser_form_submit()
  */
-function loft_gtm_dev_parser_form_validate($form, &$form_state) {
-  $values = $form_state['values'];
-  if (!preg_match('/' . $form['#regex'] . '/s', $values['input'])
-    && !preg_match('/' . $form['#regex_data_layer'] . '/s', $values['input'])
-  ) {
-    form_set_error('input', t('Invalid input'));
-  }
+function loft_gtm_dev_parser_form_validate($form, &$form_state)
+{
+    $values = $form_state['values'];
+    if (!preg_match('/' . $form['#regex'] . '/s', $values['input'])
+        && !preg_match('/' . $form['#regex_data_layer'] . '/s', $values['input'])
+    ) {
+        form_set_error('input', t('Invalid input'));
+    }
 }
 
 /**
@@ -94,39 +96,40 @@ function loft_gtm_dev_parser_form_validate($form, &$form_state) {
  * @see loft_gtm_dev_parser_form()
  * @see loft_gtm_dev_parser_form_validate()
  */
-function loft_gtm_dev_parser_form_submit($form, &$form_state) {
-  $values = $form_state['values'];
+function loft_gtm_dev_parser_form_submit($form, &$form_state)
+{
+    $values = $form_state['values'];
 
-  variable_set('loft_gtm_dev_target_module', $values['loft_gtm_dev_target_module']);
+    variable_set('loft_gtm_dev_target_module', $values['loft_gtm_dev_target_module']);
 
-  $form_state['rebuild'] = TRUE;
-  if (preg_match('/' . $form['#regex'] . '/si', $values['input'], $parsed)) {
-    $regex = '#regex';
-  }
-  elseif (preg_match('/' . $form['#regex_data_layer'] . '/si', $values['input'], $parsed)) {
-    $regex = '#regex_data_layer';
-  }
-
-  array_shift($parsed);
-  $parsed[1] = str_replace("'", '"', $parsed[1]);
-  $parsed[1] = json_decode($parsed[1], TRUE);
-  $parsed = array_combine(array('#method', '#params'), $parsed);
-  $callback_params = isset($values['callback_params']) ? explode(',', $values['callback_params']) : array();
-
-  foreach ($parsed['#params'] as $key => $value) {
-    if (in_array($key, $callback_params)) {
-      $parsed['#params'][$key] = array(
-        'callback'           => 't',
-        'callback arguments' => array($value),
-      );
+    $form_state['rebuild'] = true;
+    if (preg_match('/' . $form['#regex'] . '/si', $values['input'], $parsed)) {
+        $regex = '#regex';
     }
-  }
+    elseif (preg_match('/' . $form['#regex_data_layer'] . '/si', $values['input'], $parsed)) {
+        $regex = '#regex_data_layer';
+    }
 
-  $_SESSION['loft_gtm_dev']['test_event'] = $parsed = var_export($parsed, TRUE);
+    array_shift($parsed);
+    $parsed[1] = str_replace("'", '"', $parsed[1]);
+    $parsed[1] = json_decode($parsed[1], true);
+    $parsed = array_combine(array('#method', '#params'), $parsed);
+    $callback_params = isset($values['callback_params']) ? explode(',', $values['callback_params']) : array();
 
-  $form = $form_state['values']['target_form'];
-  $module = $values['loft_gtm_dev_target_module'];
-  $parsed = <<<EOD
+    foreach ($parsed['#params'] as $key => $value) {
+        if (in_array($key, $callback_params)) {
+            $parsed['#params'][$key] = array(
+                'callback'           => 't',
+                'callback arguments' => array($value),
+            );
+        }
+    }
+
+    $_SESSION['loft_gtm_dev']['test_event'] = $parsed = var_export($parsed, true);
+
+    $form = $form_state['values']['target_form'];
+    $module = $values['loft_gtm_dev_target_module'];
+    $parsed = <<<EOD
 /**
  * Implements hook_form_alter().
  */
@@ -144,10 +147,10 @@ function _{$module}_{$form}_submit(\$form, &\$form_state) {
 }
 EOD;
 
-  $form_state['storage'] = array(
-    'input'  => $form_state['values']['input'],
-    'output' => $parsed,
-  );
+    $form_state['storage'] = array(
+        'input'  => $form_state['values']['input'],
+        'output' => $parsed,
+    );
 }
 
 /**
@@ -162,23 +165,24 @@ EOD;
  * @see     loft_gtm_dev_event_test_form_submit()
  * @ingroup forms
  */
-function loft_gtm_dev_event_test_form($form, &$form_state) {
+function loft_gtm_dev_event_test_form($form, &$form_state)
+{
 
-  $form['event'] = array(
-    '#type'          => 'textarea',
-    '#title'         => t('Enter the event code array'),
-    '#default_value' => isset($_SESSION['loft_gtm_dev']['test_event']) ? $_SESSION['loft_gtm_dev']['test_event'] : '',
-    '#required'      => TRUE,
-    '#rows'          => 10,
-    '#resizable'     => TRUE,
-  );
+    $form['event'] = array(
+        '#type'          => 'textarea',
+        '#title'         => t('Enter the event code array'),
+        '#default_value' => isset($_SESSION['loft_gtm_dev']['test_event']) ? $_SESSION['loft_gtm_dev']['test_event'] : '',
+        '#required'      => true,
+        '#rows'          => 10,
+        '#resizable'     => true,
+    );
 
-  $form['submit'] = array(
-    '#type'  => 'submit',
-    '#value' => t('Fire Event'),
-  );
+    $form['submit'] = array(
+        '#type'  => 'submit',
+        '#value' => t('Fire Event'),
+    );
 
-  return $form;
+    return $form;
 }
 
 /**
@@ -187,11 +191,12 @@ function loft_gtm_dev_event_test_form($form, &$form_state) {
  * @see loft_gtm_dev_event_test_form()
  * @see loft_gtm_dev_event_test_form_validate()
  */
-function loft_gtm_dev_event_test_form_submit($form, &$form_state) {
-  $php = "\$event = " . $form_state['values']['event'] . ';';
-  eval($php);
-  loft_gtm_queue_add($event);
-  drupal_set_message(t('Event has been fired; check page source.'));
+function loft_gtm_dev_event_test_form_submit($form, &$form_state)
+{
+    $php = "\$event = " . $form_state['values']['event'] . ';';
+    eval($php);
+    loft_gtm_queue_add($event);
+    drupal_set_message(t('Event has been fired; check page source.'));
 }
 
 

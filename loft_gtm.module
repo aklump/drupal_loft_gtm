@@ -23,14 +23,14 @@ define('LOFT_GTM_INJECTION_MODE', 1);
  *
  * The default value of the event reporting switch.
  */
-define('LOFT_GTM_ENABLED', TRUE);
+define('LOFT_GTM_ENABLED', true);
 
 /**
  * @var LOFT_GTM_LOGGING
  *
  * The default value of the loggin switch.
  */
-define('LOFT_GTM_LOGGING', TRUE);
+define('LOFT_GTM_LOGGING', true);
 
 /**
  * @var LOFT_GTM_CODE
@@ -46,129 +46,134 @@ define('LOFT_GTM_URL_REGEX_REPLACE', '${1}${5}?utm_nooverride=1&${6}${7}');
  *
  * @return bool
  */
-function loft_gtm_is_active() {
-  $code = variable_get('loft_gtm_code', LOFT_GTM_CODE);
+function loft_gtm_is_active()
+{
+    $code = variable_get('loft_gtm_code', LOFT_GTM_CODE);
 
-  return !empty($code);
+    return !empty($code);
 }
 
 /**
  * Implements hook_process_page().
  */
-function loft_gtm_process_page(&$vars) {
+function loft_gtm_process_page(&$vars)
+{
 
-  drupal_add_js(drupal_get_path('module', 'loft_gtm') . '/loft_gtm.js');
-  drupal_add_js(array(
-    'loftGTM' => array(
-      'enabled' => variable_get('loft_gtm_enabled', LOFT_GTM_ENABLED),
-      'logging' => variable_get('loft_gtm_logging', LOFT_GTM_LOGGING),
-    ),
-  ), 'setting');
-
-  // Add any queued js
-  if ($queue = loft_gtm_queue_add()) {
-
-    $mode = variable_get('loft_gtm_injection_mode', LOFT_GTM_INJECTION_MODE);
+    drupal_add_js(drupal_get_path('module', 'loft_gtm') . '/loft_gtm.js');
     drupal_add_js(array(
-      'loftGTM' => array(
-        'url'    => url('loft-gtm/ajax'),
-        'method' => $mode == 1 ? 'clear' : 'process',
-        'token'  => drupal_get_token('loft_gtm'),
-        'ids'    => json_encode(array_keys($queue)),
-      ),
+        'loftGTM' => array(
+            'enabled' => variable_get('loft_gtm_enabled', LOFT_GTM_ENABLED),
+            'logging' => variable_get('loft_gtm_logging', LOFT_GTM_LOGGING),
+        ),
     ), 'setting');
 
-    // Add our queue js...
-    $debug = variable_get('loft_gtm_dev_debug_messages', FALSE);
-    $placement = array();
-    if ($mode === LOFT_GTM_INJECTION_MODE || $debug) {
-      foreach (array_keys($queue) as $key) {
-        $placement[$queue[$key]['#scope']][$key] = $js = drupal_render($queue[$key]);
-        if ($debug) {
-          watchdog('loft_gtm_dev', $js, array(), WATCHDOG_DEBUG);
-        }
-      }
+    // Add any queued js
+    if ($queue = loft_gtm_queue_add()) {
 
-      if ($mode === LOFT_GTM_INJECTION_MODE) {
-        foreach (array_keys($placement) as $key) {
-          array_unshift($placement[$key], '// Google Tag Manager');
-          array_push($placement[$key], '// End Google Tag Manager');
-          $flat = implode("\n", $placement[$key]);
-          drupal_add_js($flat, array(
-            'type'  => 'inline',
-            'scope' => $key,
-          ));
+        $mode = variable_get('loft_gtm_injection_mode', LOFT_GTM_INJECTION_MODE);
+        drupal_add_js(array(
+            'loftGTM' => array(
+                'url'    => url('loft-gtm/ajax'),
+                'method' => $mode == 1 ? 'clear' : 'process',
+                'token'  => drupal_get_token('loft_gtm'),
+                'ids'    => json_encode(array_keys($queue)),
+            ),
+        ), 'setting');
+
+        // Add our queue js...
+        $debug = variable_get('loft_gtm_dev_debug_messages', false);
+        $placement = array();
+        if ($mode === LOFT_GTM_INJECTION_MODE || $debug) {
+            foreach (array_keys($queue) as $key) {
+                $placement[$queue[$key]['#scope']][$key] = $js = drupal_render($queue[$key]);
+                if ($debug) {
+                    watchdog('loft_gtm_dev', $js, array(), WATCHDOG_DEBUG);
+                }
+            }
+
+            if ($mode === LOFT_GTM_INJECTION_MODE) {
+                foreach (array_keys($placement) as $key) {
+                    array_unshift($placement[$key], '// Google Tag Manager');
+                    array_push($placement[$key], '// End Google Tag Manager');
+                    $flat = implode("\n", $placement[$key]);
+                    drupal_add_js($flat, array(
+                        'type'  => 'inline',
+                        'scope' => $key,
+                    ));
+                }
+            }
         }
-      }
     }
-  }
 }
 
 /**
  * Implements hook_preprocess_html().
  */
-function loft_gtm_preprocess_html(&$vars) {
+function loft_gtm_preprocess_html(&$vars)
+{
 
-  // Inserts the master GTM code snippet
-  if (loft_gtm_is_active()
-    && ($code = variable_get('loft_gtm_code', LOFT_GTM_CODE))
-  ) {
-    if (empty($vars['page']['page_top'])) {
-      $vars['page']['page_top'] = array();
-    }
+    // Inserts the master GTM code snippet
+    if (loft_gtm_is_active()
+        && ($code = variable_get('loft_gtm_code', LOFT_GTM_CODE))
+    ) {
+        if (empty($vars['page']['page_top'])) {
+            $vars['page']['page_top'] = array();
+        }
 
-    // Find the lowest weight and set ours below that
-    $weight = 0;
-    foreach ($vars['page']['page_top'] as $value) {
-      if (isset($value['#weight'])) {
-        $weight = min($weight, $value['#weight']);
-      }
+        // Find the lowest weight and set ours below that
+        $weight = 0;
+        foreach ($vars['page']['page_top'] as $value) {
+            if (isset($value['#weight'])) {
+                $weight = min($weight, $value['#weight']);
+            }
+        }
+        $vars['page']['page_top'][] = array(
+            '#markup' => $code,
+            '#weight' => $weight - 1,
+        );
     }
-    $vars['page']['page_top'][] = array(
-      '#markup' => $code,
-      '#weight' => $weight - 1,
-    );
-  }
 }
 
 /**
  * Implements hook_permission().
  */
-function loft_gtm_permission() {
-  return array(
-    'loft_gtm:administer' => array(
-      'title'       => t('Administer Google Tag Manager'),
-      'description' => t("Perform administration tasks for Google Tag Manager API."),
-    ),
-  );
+function loft_gtm_permission()
+{
+    return array(
+        'loft_gtm:administer' => array(
+            'title'       => t('Administer Google Tag Manager'),
+            'description' => t("Perform administration tasks for Google Tag Manager API."),
+        ),
+    );
 }
 
 /**
  * Implements hook_menu().
  */
-function loft_gtm_menu() {
-  $items = array();
+function loft_gtm_menu()
+{
+    $items = array();
 
-  $items['admin/config/search/loft-gtm'] = array(
-    'title'            => 'Google Tag Manager',
-    'page callback'    => 'drupal_get_form',
-    'page arguments'   => array('loft_gtm_admin_settings'),
-    'access arguments' => array('loft_gtm:administer'),
-    'type'             => MENU_NORMAL_ITEM,
-    'file'             => 'includes/loft_gtm.admin.inc',
-  );
-  $items['admin/config/search/loft-gtm/settings'] = array(
-    'title'  => 'Settings',
-    'type'   => MENU_DEFAULT_LOCAL_TASK,
-    'weight' => -10,
-  );
-  $items['loft-gtm/ajax'] = array(
-    'page callback'    => 'loft_gtm_ajax_handler',
-    'access arguments' => array('access content'),
-    'type'             => MENU_CALLBACK,
-  );
+    $items['admin/config/search/loft-gtm'] = array(
+        'title'            => 'Google Tag Manager',
+        'page callback'    => 'drupal_get_form',
+        'page arguments'   => array('loft_gtm_admin_settings'),
+        'access arguments' => array('loft_gtm:administer'),
+        'type'             => MENU_NORMAL_ITEM,
+        'file'             => 'includes/loft_gtm.admin.inc',
+    );
+    $items['admin/config/search/loft-gtm/settings'] = array(
+        'title'  => 'Settings',
+        'type'   => MENU_DEFAULT_LOCAL_TASK,
+        'weight' => -10,
+    );
+    $items['loft-gtm/ajax'] = array(
+        'page callback'    => 'loft_gtm_ajax_handler',
+        'access arguments' => array('access content'),
+        'type'             => MENU_CALLBACK,
+    );
 
-  return $items;
+    return $items;
 }
 
 /**
@@ -177,25 +182,26 @@ function loft_gtm_menu() {
  * Expects to receive from an url like: loft-gtm/ajax/queue/process/ajax arg(2)
  * becomes the method and then we call function: _loft_gtm_ajax_handler_queue()
  */
-function loft_gtm_ajax_handler() {
-  $args = func_get_args();
-  $method = array_shift($args);
-  module_load_include('inc', 'loft_gtm', "includes/loft_gtm.$method");
-  $function = '_loft_gtm_ajax_handler_' . $method;
-  $token = isset($_POST['token']) ? $_POST['token'] : NULL;
-  $valid = $token && drupal_get_token('loft_gtm') == $token;
-  if (!$valid) {
-    watchdog('loft_gtm', 'Invalid ajax handler token: "%token"', array('%token' => $token), WATCHDOG_WARNING);
+function loft_gtm_ajax_handler()
+{
+    $args = func_get_args();
+    $method = array_shift($args);
+    module_load_include('inc', 'loft_gtm', "includes/loft_gtm.$method");
+    $function = '_loft_gtm_ajax_handler_' . $method;
+    $token = isset($_POST['token']) ? $_POST['token'] : null;
+    $valid = $token && drupal_get_token('loft_gtm') == $token;
+    if (!$valid) {
+        watchdog('loft_gtm', 'Invalid ajax handler token: "%token"', array('%token' => $token), WATCHDOG_WARNING);
 
-    return MENU_ACCESS_DENIED;
-  }
-  elseif (!function_exists($function)) {
-    watchdog('loft_gtm', 'Invalid ajax function presented: "%function"', array('%function' => $function), WATCHDOG_WARNING);
+        return MENU_ACCESS_DENIED;
+    }
+    elseif (!function_exists($function)) {
+        watchdog('loft_gtm', 'Invalid ajax function presented: "%function"', array('%function' => $function), WATCHDOG_WARNING);
 
-    return MENU_NOT_FOUND;
-  }
+        return MENU_NOT_FOUND;
+    }
 
-  return call_user_func_array($function, $args);
+    return call_user_func_array($function, $args);
 }
 
 /**
@@ -214,39 +220,41 @@ function loft_gtm_ajax_handler() {
  *
  * @tested
  */
-function loft_gtm_queue_add($data = NULL) {
-  
-  // TODO This should be done using drupal_add_js.
-  if (!isset($_SESSION['loft_gtm']['queue'])) {
-    $_SESSION['loft_gtm']['queue'] = array();
-  }
-  if ($data) {
-    $data += array(
-      '#method' => '',
-      '#params' => array(),
-    );
+function loft_gtm_queue_add($data = null)
+{
 
-    $key = count($_SESSION['loft_gtm']['queue']) . md5(serialize($data));
-    $data += array(
-      '#theme' => 'loft_gtm_datalayer',
-    );
-    $data['#scope'] = empty($data['#method']) ? 'header' : 'footer';
-    $_SESSION['loft_gtm']['queue'][$key] = $data;
-  }
+    // TODO This should be done using drupal_add_js.
+    if (!isset($_SESSION['loft_gtm']['queue'])) {
+        $_SESSION['loft_gtm']['queue'] = array();
+    }
+    if ($data) {
+        $data += array(
+            '#method' => '',
+            '#params' => array(),
+        );
 
-  return $_SESSION['loft_gtm']['queue'];
+        $key = count($_SESSION['loft_gtm']['queue']) . md5(serialize($data));
+        $data += array(
+            '#theme' => 'loft_gtm_datalayer',
+        );
+        $data['#scope'] = empty($data['#method']) ? 'header' : 'footer';
+        $_SESSION['loft_gtm']['queue'][$key] = $data;
+    }
+
+    return $_SESSION['loft_gtm']['queue'];
 }
 
 /**
  * Implements hook_theme().
  */
-function loft_gtm_theme($existing, $type, $theme, $path) {
-  return array(
-    'loft_gtm_datalayer' => array(
-      'file'           => 'includes/loft_gtm.theme.inc',
-      'render element' => 'event',
-    ),
-  );
+function loft_gtm_theme($existing, $type, $theme, $path)
+{
+    return array(
+        'loft_gtm_datalayer' => array(
+            'file'           => 'includes/loft_gtm.theme.inc',
+            'render element' => 'event',
+        ),
+    );
 }
 
 /**
@@ -262,26 +270,28 @@ function loft_gtm_theme($existing, $type, $theme, $path) {
  * @see url().
  * @see drupal_get_normal_path().
  */
-function loft_gtm_get_path($path = '', $options = array()) {
-  $options += array(
-    'alias' => TRUE,
-  );
-  $path = $path ? $path : $_GET['q'];
+function loft_gtm_get_path($path = '', $options = array())
+{
+    $options += array(
+        'alias' => true,
+    );
+    $path = $path ? $path : $_GET['q'];
 
-  return url(drupal_get_normal_path($path), $options);
+    return url(drupal_get_normal_path($path), $options);
 }
 
 /**
  * Implements hook_module_implements_alter().
  */
-function loft_gtm_module_implements_alter(&$implementations, $hook) {
-  if ($hook == 'mail_alter') {
-    // To move an item to the end of the array so it gets implemented last, we
-    // remove it and then add it.
-    $group = $implementations['loft_gtm'];
-    unset($implementations['loft_gtm']);
-    $implementations['loft_gtm'] = $group;
-  }
+function loft_gtm_module_implements_alter(&$implementations, $hook)
+{
+    if ($hook == 'mail_alter') {
+        // To move an item to the end of the array so it gets implemented last, we
+        // remove it and then add it.
+        $group = $implementations['loft_gtm'];
+        unset($implementations['loft_gtm']);
+        $implementations['loft_gtm'] = $group;
+    }
 }
 
 /**
@@ -298,16 +308,17 @@ function loft_gtm_module_implements_alter(&$implementations, $hook) {
  *
  * @see  loft_gtm_mail_alter()
  */
-function _loft_gtm_get_domain() {
-  global $loft_gtm_domain;
-  if ($domain = $loft_gtm_domain) {
-    return $domain;
-  }
-  $domain = url(NULL, array('absolute' => TRUE));
-  $domain = pathinfo($domain);
-  $domain = $domain['basename'];
+function _loft_gtm_get_domain()
+{
+    global $loft_gtm_domain;
+    if ($domain = $loft_gtm_domain) {
+        return $domain;
+    }
+    $domain = url(null, array('absolute' => true));
+    $domain = pathinfo($domain);
+    $domain = $domain['basename'];
 
-  return $domain;
+    return $domain;
 }
 
 /**
@@ -317,40 +328,41 @@ function _loft_gtm_get_domain() {
  *
  * @tested
  */
-function loft_gtm_mail_alter(&$message) {
-  if (empty($message['body']) || !is_array($message['body'])) {
-    return;
-  }
-
-  // Determine the base url of the website
-  // $url = _loft_gtm_get_domain();
-
-  foreach (array_keys($message['body']) as $key) {
-
-    $text = &$message['body'][$key];
-
-    // Add utm_nooverride=1 to all links in the message
-    $text = preg_replace(LOFT_GTM_URL_REGEX_FIND, LOFT_GTM_URL_REGEX_REPLACE, $text);
-
-    // Now do some fine tuning, hackish stuff...
-    preg_match_all(LOFT_GTM_URL_REGEX_FIND, $text, $matches);
-
-    // Email address shouldn't have this appended
-    foreach ($matches[1] as $key => $value) {
-      if (valid_email_address($value)) {
-        $text = str_replace($matches[0][$key], $value, $text);
-      }
+function loft_gtm_mail_alter(&$message)
+{
+    if (empty($message['body']) || !is_array($message['body'])) {
+        return;
     }
 
-    foreach ($matches[0] as $key => $value) {
+    // Determine the base url of the website
+    // $url = _loft_gtm_get_domain();
 
-      // Fix the url that ends with a '.',
-      // e.g., http://www.globalonenessproject.local/user/login.?utm_nooverride=1&
-      if (!empty($matches[6][$key]) && substr($matches[5][$key], -1) === '.') {
-        $find = $replace = $matches[0][$key];
-        $replace = str_replace($matches[5][$key], rtrim($matches[5][$key], '.'), $replace) . '.';
-        $text = str_replace($find, $replace, $text);
-      }
+    foreach (array_keys($message['body']) as $key) {
+
+        $text = &$message['body'][$key];
+
+        // Add utm_nooverride=1 to all links in the message
+        $text = preg_replace(LOFT_GTM_URL_REGEX_FIND, LOFT_GTM_URL_REGEX_REPLACE, $text);
+
+        // Now do some fine tuning, hackish stuff...
+        preg_match_all(LOFT_GTM_URL_REGEX_FIND, $text, $matches);
+
+        // Email address shouldn't have this appended
+        foreach ($matches[1] as $key => $value) {
+            if (valid_email_address($value)) {
+                $text = str_replace($matches[0][$key], $value, $text);
+            }
+        }
+
+        foreach ($matches[0] as $key => $value) {
+
+            // Fix the url that ends with a '.',
+            // e.g., http://www.globalonenessproject.local/user/login.?utm_nooverride=1&
+            if (!empty($matches[6][$key]) && substr($matches[5][$key], -1) === '.') {
+                $find = $replace = $matches[0][$key];
+                $replace = str_replace($matches[5][$key], rtrim($matches[5][$key], '.'), $replace) . '.';
+                $text = str_replace($find, $replace, $text);
+            }
+        }
     }
-  }
 }
