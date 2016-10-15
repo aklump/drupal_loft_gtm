@@ -36,6 +36,7 @@ define('LOFT_GTM_LOGGING', true);
  * @var LOFT_GTM_CODE
  */
 define('LOFT_GTM_CODE', '');
+define('LOFT_GTM_CODE_NOSCRIPT', '');
 
 define('LOFT_GTM_URL_REGEX_FIND', '/(?:(([A-Za-z]{3,9}:(?:\/\/)?)(?:[-;:&=\+\$,\w]+@)?([A-Za-z0-9.-]+)|(?:www.|[-;:&=\+\$,\w]+@)[A-Za-z0-9.-]+)((\/[\+~%\/.\w-_]*)?\??([-\+=&;%@.\w_]*)(#?(?:[\w]*)))?)/i');
 
@@ -111,26 +112,32 @@ function loft_gtm_process_page(&$vars)
  */
 function loft_gtm_preprocess_html(&$vars)
 {
-
     // Inserts the master GTM code snippet
-    if (loft_gtm_is_active()
-        && ($code = variable_get('loft_gtm_code', LOFT_GTM_CODE))
-    ) {
-        if (empty($vars['page']['page_top'])) {
-            $vars['page']['page_top'] = array();
-        }
+    if (loft_gtm_is_active()) {
+        $g = data_api();
+        $var_name = variable_get('loft_gtm_theme_support', false) ? 'loft_gtm' : 'page.content.loft_gtm';
 
-        // Find the lowest weight and set ours below that
+
+        // Find the lowest weight of the siblings and set ours below that.
         $weight = 0;
-        foreach ($vars['page']['page_top'] as $value) {
+        $args = explode('.', $var_name);
+        array_pop($args);
+        $siblings = $g->get($vars, $args, array());
+        foreach (element_children($siblings) as $child) {
+            $value = $siblings[$child];
             if (isset($value['#weight'])) {
                 $weight = min($weight, $value['#weight']);
             }
         }
-        $vars['page']['page_top'][] = array(
-            '#markup' => $code,
+
+        $g->set($vars, $var_name . '.noscript', array(
+            '#markup' => trim(variable_get('loft_gtm_code_noscript', LOFT_GTM_CODE_NOSCRIPT)) . PHP_EOL,
+            '#weight' => $weight - 2,
+        ));
+        $g->set($vars, $var_name . '.code', array(
+            '#markup' => trim(variable_get('loft_gtm_code', LOFT_GTM_CODE)) . PHP_EOL,
             '#weight' => $weight - 1,
-        );
+        ));
     }
 }
 
@@ -288,21 +295,15 @@ function loft_gtm_module_implements_alter(&$implementations, $hook)
     if ($hook == 'mail_alter') {
         // To move an item to the end of the array so it gets implemented last, we
         // remove it and then add it.
-        $group = $implementations['loft_gtm'];
-        unset($implementations['loft_gtm']);
-        $implementations['loft_gtm'] = $group;
+        if ($group = data_api()->get($implementations, 'loft_gtm', false)) {
+            unset($implementations['loft_gtm']);
+            $implementations['loft_gtm'] = $group;
+        }
     }
 }
 
 /**
  * Helper function to return the website domain name
- *
- * Usage: automated tests will alter the actual domain like this:
- *
- * @code
- *   global $loft_gtm_domain;
- *   $loft_gtm_domain = 'https://www.someotherdomainfortesting'
- * @endcode
  *
  * @return string
  *
@@ -310,10 +311,6 @@ function loft_gtm_module_implements_alter(&$implementations, $hook)
  */
 function _loft_gtm_get_domain()
 {
-    global $loft_gtm_domain;
-    if ($domain = $loft_gtm_domain) {
-        return $domain;
-    }
     $domain = url(null, array('absolute' => true));
     $domain = pathinfo($domain);
     $domain = $domain['basename'];
@@ -331,7 +328,7 @@ function _loft_gtm_get_domain()
 function loft_gtm_mail_alter(&$message)
 {
     if (empty($message['body']) || !is_array($message['body'])) {
-        return;
+        return false;
     }
 
     // Determine the base url of the website

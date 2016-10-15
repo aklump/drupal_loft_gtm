@@ -6,3 +6,5 @@ core = "7.x"
 files[] = "tests/loft_gtm.test"
 files[] = "tests/loft_gtm.units.test"
 files[] = "tests/loft_gtm.phpunit.test"
+
+dependencies[] = 'data_api'

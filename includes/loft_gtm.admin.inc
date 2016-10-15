@@ -15,12 +15,44 @@
  */
 function loft_gtm_admin_settings($form, &$form_state)
 {
-    $code = variable_get('loft_gtm_code', LOFT_GTM_CODE);
+    $code0 = variable_get('loft_gtm_code', LOFT_GTM_CODE);
+    $code1 = variable_get('loft_gtm_code_noscript', LOFT_GTM_CODE_NOSCRIPT);
+
     $form['init'] = array(
         '#type'        => 'fieldset',
-        '#title'       => t('General Settings'),
+        '#title'       => t('Google Tag Manager Code Snippets'),
+        '#description' => t('Enter your code from Google here. To obtain your code or register for an account visit <a href="!url">Google.com</a>.', array(
+            '!url' => url('http://www.google.com/tagmanager/'),
+        )),
         '#collapsible' => true,
-        '#collapsed'   => !empty($code),
+        '#collapsed'   => !empty($code0 . $code1),
+    );
+
+    $form['init']['loft_gtm_theme_support'] = array(
+        '#type'          => 'checkbox',
+        '#title'         => t('My theme supports this module (using <code>$loft_gtm</code>).'),
+        '#default_value' => variable_get('loft_gtm_theme_support', false),
+    );
+
+    $form['init']['loft_gtm_code'] = array(
+        '#type'          => 'textarea',
+        '#title'         => t('Box One (Paste this code as high in the &lt;head> of the page as possible)'),
+        '#default_value' => $code0,
+        '#required'      => true,
+        '#rows'          => 8,
+        '#resizable'     => true,
+    );
+
+    $form['init']['loft_gtm_code_noscript'] = array(
+        '#type'          => 'textarea',
+        '#title'         => t('Box Two (Additionally, paste this code immediately after the opening &lt;body> tag)'),
+        '#description'   => t('Enter your code from Google here. To obtain your code or register for an account visit <a href="@url">Google.com</a>.', array(
+            '@url' => url('http://www.google.com/tagmanager/'),
+        )),
+        '#default_value' => $code1,
+        '#required'      => true,
+        '#rows'          => 5,
+        '#resizable'     => true,
     );
 
     $form['loft_gtm_enabled'] = array(
@@ -33,18 +65,6 @@ function loft_gtm_admin_settings($form, &$form_state)
         '#type'          => 'checkbox',
         '#title'         => t('Enable Google event logging (dev only)'),
         '#default_value' => variable_get('loft_gtm_logging', LOFT_GTM_LOGGING),
-    );
-
-    $form['init']['loft_gtm_code'] = array(
-        '#type'          => 'textarea',
-        '#title'         => t('Google Tag Manager Code'),
-        '#description'   => t('Enter your code from Google here. To obtain your code or register for an account visit <a href="@url">Google.com</a>.', array(
-            '@url' => url('http://www.google.com/tagmanager/'),
-        )),
-        '#default_value' => $code,
-        '#required'      => true,
-        '#rows'          => 10,
-        '#resizable'     => true,
     );
 
     $form['loft_gtm_injection_mode'] = array(
