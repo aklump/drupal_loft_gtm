@@ -130,6 +130,12 @@ function loft_gtm_preprocess_html(&$vars)
             }
         }
 
+        $g->set($vars, $var_name . '.dataLayer', array(
+            '#prefix' => '<script>',
+            '#suffix' => '</script>',
+            '#markup' => strval(loft_gtm_datalayer()),
+            '#weight' => $weight - 10,
+        ));
         $g->set($vars, $var_name . '.noscript', array(
             '#markup' => trim(variable_get('loft_gtm_code_noscript', LOFT_GTM_CODE_NOSCRIPT)) . PHP_EOL,
             '#weight' => $weight - 2,
@@ -249,6 +255,14 @@ function loft_gtm_queue_add($data = null)
     }
 
     return $_SESSION['loft_gtm']['queue'];
+}
+
+/**
+ * @return DataLayer
+ */
+function loft_gtm_datalayer() {
+    $dataLayer = &drupal_static(__FUNCTION__, new DataLayer);
+    return $dataLayer;
 }
 
 /**

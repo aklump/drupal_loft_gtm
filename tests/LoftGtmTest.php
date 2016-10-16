@@ -2,6 +2,12 @@
 
 class LoftGtmTest extends PHPUnit_Framework_TestCase
 {
+    public function testDataLayerPush()
+    {
+        $obj = $this->dataLayer;
+        $obj->push('cartTotal', 45.78);
+        $this->assertSame('dataLayer.push([{"cartTotal":45.78}]);', strval($obj));
+    }
 
     /**
      * Provides data for testGetDomain.
@@ -70,7 +76,7 @@ class LoftGtmTest extends PHPUnit_Framework_TestCase
     /**
      * @dataProvider DataForTestPreprocessHtmlProvider
      */
-    public function testPreprocessHtml($vars, $weight)
+    public function _testPreprocessHtml($vars, $weight)
     {
         $g = data_api();
 
@@ -176,5 +182,6 @@ Originally to: joansey@mysite.org
         $this->gtmCodeNoscript = '...';
         variable_set('loft_gtm_code', $this->gtmCode);
         variable_set('loft_gtm_code_noscript', $this->gtmCodeNoscript);
+        $this->dataLayer = new DataLayer;
     }
 }

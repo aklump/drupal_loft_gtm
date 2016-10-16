@@ -12,9 +12,9 @@ if (!defined('MENU_DEFAULT_LOCAL_TASK')) {
 if (!defined('MENU_CALLBACK')) {
     define('MENU_CALLBACK', true);
 }
-
 require_once dirname(__FILE__) . '/../loft_gtm.module';
-require_once dirname(__FILE__) . '/../../data_api/tests/bootstrap.php';
+require_once dirname(__FILE__) . '/../includes/DataLayer.php';
+require_once dirname(__FILE__) . '/../../../contrib/data_api/tests/bootstrap.php';
 
 function t($string, $vars = array())
 {
