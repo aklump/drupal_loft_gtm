@@ -18,6 +18,6 @@ class DataLayer
 
     public function __toString()
     {
-        return 'dataLayer.push(' . json_encode(array($this->data['push'])) . ');';
+        return 'dataLayer.push(' . json_encode($this->data['push']) . ');';
     }
 }
