@@ -8,15 +8,11 @@
  */
 
 /**
- * @var LOFT_GTM_INJECTION_MODE
+ * @var LOFT_GTM_DEFAULT_EVENT
  *
- * This setting answers the question of how the dataLayer.push events are
- * processed in the DOM.
- *
- * 1 = written in the page footer as inline js
- * 2 = inserted via ajax as a direct call to the dataLayer object
+ * This is the fallback event for event methods when not provided.
  */
-define('LOFT_GTM_INJECTION_MODE', 1);
+define('LOFT_GTM_DEFAULT_EVENT', 'eventTracker');
 
 /**
  * @var LOFT_GTM_ENABLED
@@ -55,55 +51,28 @@ function loft_gtm_is_active()
 }
 
 /**
- * Implements hook_process_page().
+ * Implements hook_init().
  */
-function loft_gtm_process_page(&$vars)
+function loft_gtm_init()
 {
-
-    drupal_add_js(drupal_get_path('module', 'loft_gtm') . '/loft_gtm.js');
-    drupal_add_js(array(
-        'loftGTM' => array(
-            'enabled' => variable_get('loft_gtm_enabled', LOFT_GTM_ENABLED),
-            'logging' => variable_get('loft_gtm_logging', LOFT_GTM_LOGGING),
-        ),
-    ), 'setting');
-
-    // Add any queued js
-    if ($queue = loft_gtm_queue_add()) {
-
-        $mode = variable_get('loft_gtm_injection_mode', LOFT_GTM_INJECTION_MODE);
-        drupal_add_js(array(
-            'loftGTM' => array(
-                'url'    => url('loft-gtm/ajax'),
-                'method' => $mode == 1 ? 'clear' : 'process',
-                'token'  => drupal_get_token('loft_gtm'),
-                'ids'    => json_encode(array_keys($queue)),
+    if (loft_gtm_is_active()) {
+        $attached = array();
+        $attached['#attached']['js'][] = array(
+            'type'  => 'file',
+            'data'  => drupal_get_path('module', 'loft_gtm') . '/loft_gtm.js',
+            'scope' => 'footer',
+        );
+        $attached['#attached']['js'][] = array(
+            'type' => 'setting',
+            'data' => array(
+                'loftGTM' => array(
+                    'event'   => variable_get('loft_gtm_default_event', LOFT_GTM_DEFAULT_EVENT),
+                    'enabled' => variable_get('loft_gtm_enabled', LOFT_GTM_ENABLED),
+                    'logging' => variable_get('loft_gtm_logging', LOFT_GTM_LOGGING),
+                ),
             ),
-        ), 'setting');
-
-        // Add our queue js...
-        $debug = variable_get('loft_gtm_dev_debug_messages', false);
-        $placement = array();
-        if ($mode === LOFT_GTM_INJECTION_MODE || $debug) {
-            foreach (array_keys($queue) as $key) {
-                $placement[$queue[$key]['#scope']][$key] = $js = drupal_render($queue[$key]);
-                if ($debug) {
-                    watchdog('loft_gtm_dev', $js, array(), WATCHDOG_DEBUG);
-                }
-            }
-
-            if ($mode === LOFT_GTM_INJECTION_MODE) {
-                foreach (array_keys($placement) as $key) {
-                    array_unshift($placement[$key], '// Google Tag Manager');
-                    array_push($placement[$key], '// End Google Tag Manager');
-                    $flat = implode("\n", $placement[$key]);
-                    drupal_add_js($flat, array(
-                        'type'  => 'inline',
-                        'scope' => $key,
-                    ));
-                }
-            }
-        }
+        );
+        drupal_render($attached);
     }
 }
 
@@ -129,22 +98,40 @@ function loft_gtm_preprocess_html(&$vars)
                 $weight = min($weight, $value['#weight']);
             }
         }
+        $pushes = loft_gtm_datalayer()->build();
+        loft_gtm_datalayer()->flush();
+        $defaults = array_shift($pushes);
 
+        // These are the defaults
         $g->set($vars, $var_name . '.dataLayer', array(
             '#prefix' => '<script>',
-            '#suffix' => '</script>',
-            '#markup' => strval(loft_gtm_datalayer()),
+            '#suffix' => '</script>' . PHP_EOL,
+            '#markup' => $defaults,
             '#weight' => $weight - 10,
         ));
+
         $g->set($vars, $var_name . '.noscript', array(
             '#markup' => trim(variable_get('loft_gtm_code_noscript', LOFT_GTM_CODE_NOSCRIPT)) . PHP_EOL,
-            '#weight' => $weight - 2,
+            '#weight' => $weight - 3,
         ));
         $g->set($vars, $var_name . '.code', array(
             '#markup' => trim(variable_get('loft_gtm_code', LOFT_GTM_CODE)) . PHP_EOL,
-            '#weight' => $weight - 1,
+            '#weight' => $weight - 2,
         ));
+
+        // These are all the push instances
+        if ($pushes) {
+            $vars[$var_name]['push'] = array(
+                '#prefix' => '<script>',
+                '#suffix' => '</script>' . PHP_EOL,
+                '#markup' => implode(PHP_EOL, $pushes),
+                '#weight' => $weight - 1,
+            );
+        }
+
     }
+
+    drupal_render($attached);
 }
 
 /**
@@ -190,34 +177,6 @@ function loft_gtm_menu()
 }
 
 /**
- * Handles the ajax call.
- *
- * Expects to receive from an url like: loft-gtm/ajax/queue/process/ajax arg(2)
- * becomes the method and then we call function: _loft_gtm_ajax_handler_queue()
- */
-function loft_gtm_ajax_handler()
-{
-    $args = func_get_args();
-    $method = array_shift($args);
-    module_load_include('inc', 'loft_gtm', "includes/loft_gtm.$method");
-    $function = '_loft_gtm_ajax_handler_' . $method;
-    $token = isset($_POST['token']) ? $_POST['token'] : null;
-    $valid = $token && drupal_get_token('loft_gtm') == $token;
-    if (!$valid) {
-        watchdog('loft_gtm', 'Invalid ajax handler token: "%token"', array('%token' => $token), WATCHDOG_WARNING);
-
-        return MENU_ACCESS_DENIED;
-    }
-    elseif (!function_exists($function)) {
-        watchdog('loft_gtm', 'Invalid ajax function presented: "%function"', array('%function' => $function), WATCHDOG_WARNING);
-
-        return MENU_NOT_FOUND;
-    }
-
-    return call_user_func_array($function, $args);
-}
-
-/**
  * Add a GTM event to the queue to be output to the page
  *
  * @param mixed $data
@@ -231,51 +190,46 @@ function loft_gtm_ajax_handler()
  * @return array
  *   An array of all js in the queue
  *
- * @tested
+ * @deprecated Use loft_gtm_datalayer()->push(...) instead.
  */
 function loft_gtm_queue_add($data = null)
 {
+    loft_gtm_datalayer()->{$data['#method']}($data['#params'])->build();
 
-    // TODO This should be done using drupal_add_js.
-    if (!isset($_SESSION['loft_gtm']['queue'])) {
-        $_SESSION['loft_gtm']['queue'] = array();
-    }
-    if ($data) {
-        $data += array(
-            '#method' => '',
-            '#params' => array(),
-        );
-
-        $key = count($_SESSION['loft_gtm']['queue']) . md5(serialize($data));
-        $data += array(
-            '#theme' => 'loft_gtm_datalayer',
-        );
-        $data['#scope'] = empty($data['#method']) ? 'header' : 'footer';
-        $_SESSION['loft_gtm']['queue'][$key] = $data;
-    }
-
-    return $_SESSION['loft_gtm']['queue'];
+    return array();
 }
 
 /**
+ *
+ * Return a session based dataLayer object.
+ *
+ * This object will persist in the session which insures that server-side
+ * events that may get triggered during an ajax call and not rendered, will
+ * make it to the final render phase on the next full page load.
+ *
  * @return DataLayer
  */
-function loft_gtm_datalayer() {
-    $dataLayer = &drupal_static(__FUNCTION__, new DataLayer);
-    return $dataLayer;
-}
-
-/**
- * Implements hook_theme().
- */
-function loft_gtm_theme($existing, $type, $theme, $path)
+function loft_gtm_datalayer()
 {
-    return array(
-        'loft_gtm_datalayer' => array(
-            'file'           => 'includes/loft_gtm.theme.inc',
-            'render element' => 'event',
-        ),
-    );
+    static $drupal_static_fast;
+    if (!isset($drupal_static_fast)) {
+        $drupal_static_fast['dataLayer'] = &drupal_static(__FUNCTION__, null);
+    }
+    $dataLayer = &$drupal_static_fast['dataLayer'];
+    if (!isset($dataLayer)) {
+        $dataLayer = data_api()->get($_SESSION, 'loft_gtm.datalayer', null, function ($dataLayer) {
+            if (is_null($dataLayer)) {
+                $dataLayer = new DataLayer(
+                    variable_get('loft_gtm_default_event', LOFT_GTM_DEFAULT_EVENT)
+                );
+                data_api()->set($_SESSION, 'loft_gtm.datalayer', $dataLayer);
+            }
+
+            return $dataLayer;
+        });
+    }
+
+    return $dataLayer;
 }
 
 /**
@@ -337,16 +291,13 @@ function _loft_gtm_get_domain()
  *
  * @param array &$message
  *
- * @tested
+ * @return bool
  */
 function loft_gtm_mail_alter(&$message)
 {
     if (empty($message['body']) || !is_array($message['body'])) {
         return false;
     }
-
-    // Determine the base url of the website
-    // $url = _loft_gtm_get_domain();
 
     foreach (array_keys($message['body']) as $key) {
 

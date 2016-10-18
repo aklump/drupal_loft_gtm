@@ -2,11 +2,62 @@
 
 class LoftGtmTest extends PHPUnit_Framework_TestCase
 {
+
+    public function testEventMethod()
+    {
+        $obj = $this->dataLayer;
+        $obj->set('cartValue', 100.99);
+        $obj->event('shopping', 'checkout complete');
+        $build = $obj->build();
+        $this->assertCount(2, $build);
+        $this->assertSame('dataLayer = [{"cartValue":100.99}];', $build[0]);
+        $this->assertSame('dataLayer.push({"event":"eventTracker","eventCat":"shopping","eventAct":"checkout complete"});', $build[1]);
+    }
+
+    public function testDataLayerPushNoRepeatByUuid()
+    {
+        $obj = $this->dataLayer;
+        $obj->push(['event' => 'click'], 'carrot');
+        $obj->push(['event' => 'click_again'], 'carrot');
+        $obj->push(['event' => 'click'], true);
+        $build = $obj->build();
+        $this->assertCount(3, $build);
+        $this->assertSame('dataLayer = [];', $build[0]);
+        $this->assertSame('dataLayer.push({"event":"click"});', $build[1]);
+        $this->assertSame('dataLayer.push({"event":"click"});', $build[2]);
+    }
+
+    public function testDataLayerPushNoRepeat()
+    {
+        $obj = $this->dataLayer;
+        $obj->push(['event' => 'click'], true);
+        $obj->push(['event' => 'click'], true);
+        $build = $obj->build();
+        $this->assertCount(2, $build);
+        $this->assertSame('dataLayer = [];', $build[0]);
+        $this->assertSame('dataLayer.push({"event":"click"});', $build[1]);
+    }
+
     public function testDataLayerPush()
     {
         $obj = $this->dataLayer;
-        $obj->push('cartTotal', 45.78);
-        $this->assertSame('dataLayer.push([{"cartTotal":45.78}]);', strval($obj));
+        $obj->push(['event' => 'click']);
+        $obj->push(['event' => 'click_again']);
+        $build = $obj->build();
+        $this->assertCount(3, $build);
+        $this->assertSame('dataLayer = [];', $build[0]);
+        $this->assertSame('dataLayer.push({"event":"click"});', $build[1]);
+        $this->assertSame('dataLayer.push({"event":"click_again"});', $build[2]);
+    }
+
+    public function testDataLayerSet()
+    {
+        $obj = $this->dataLayer;
+        $obj->set('cartTotal', 10.99);
+        $obj->set('cartTotal', 45.78);
+        $build = $obj->build();
+        $this->assertCount(1, $build);
+        $this->assertSame('dataLayer = [{"cartTotal":45.78}];', $build[0]);
     }
 
     /**
@@ -98,11 +149,6 @@ class LoftGtmTest extends PHPUnit_Framework_TestCase
         $tests = array();
         $tests[] = array('loft_gtm_menu', array(), array());
         $tests[] = array('loft_gtm_permission', array(), array());
-        $tests[] = array(
-            'loft_gtm_theme',
-            array(null, null, null, null),
-            array('loft_gtm_datalayer'),
-        );
 
         return $tests;
     }
@@ -135,15 +181,15 @@ class LoftGtmTest extends PHPUnit_Framework_TestCase
         $tests = array();
         $tests[] = array(
             "This email was rerouted.
-Web site: http://dev.mysite.local
-Mail key: contact_page_mail
-Originally to: joansey@mysite.org
------------------------",
+    Web site: http://dev.mysite.local
+    Mail key: contact_page_mail
+    Originally to: joansey@mysite.org
+    -----------------------",
             "This email was rerouted.
-Web site: http://dev.mysite.local?utm_nooverride=1&
-Mail key: contact_page_mail
-Originally to: joansey@mysite.org
------------------------",
+    Web site: http://dev.mysite.local?utm_nooverride=1&
+    Mail key: contact_page_mail
+    Originally to: joansey@mysite.org
+    -----------------------",
         );
 
         $tests[] = array(
@@ -182,6 +228,6 @@ Originally to: joansey@mysite.org
         $this->gtmCodeNoscript = '...';
         variable_set('loft_gtm_code', $this->gtmCode);
         variable_set('loft_gtm_code_noscript', $this->gtmCodeNoscript);
-        $this->dataLayer = new DataLayer;
+        $this->dataLayer = new DataLayer('eventTracker');
     }
 }

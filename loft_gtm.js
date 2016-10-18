@@ -5,8 +5,73 @@
  * @ingroup loft_gtm
  * @{
  */
-(function ($, Drupal, window, document, undefined) {
+(function ($, Drupal, googleDataLayer) {
   "use strict";
+
+  /**
+   * A wrapper for google's dataLayer integrates drupal controls and logging.
+   */
+  function dataLayer(logger, settings, googleDataLayer) {
+    this.log = logger;
+    this.settings = settings;
+    this.googleDataLayer = googleDataLayer;
+
+    this.index = [];
+    this.index.instances = [];
+  }
+
+  /**
+   * Perform a dataLayer push.
+   * @param data
+   * @param uuid
+   * @returns {dataLayer}
+   */
+  dataLayer.prototype.push = function (data, uuid) {
+
+    var json = JSON.stringify(data);
+
+    // Validation checking
+    if (!this.settings.enabled) {
+      throw 'loftGTM.enabled === false, prevented push ' + json;
+    }
+
+    if (!this.googleDataLayer) {
+      throw "Missing dependency 'dataLayer'; cannot push " + json;
+    }
+
+    var key = typeof(uuid) === "string" ? uuid : JSON.stringify(data);
+    if (!uuid || !this.index.instances[key]) {
+      this.googleDataLayer.push(data);
+      this.index.instances[key] = true;
+      this.log('Google tag manager, dataLayer.push executed.');
+      this.log(data)
+    }
+    else {
+      this.log('Duplicate push blocked for ' + json);
+    }
+
+    return this;
+  };
+
+  /**
+   * Shortcut method to push events
+   * @param category
+   * @param action
+   * @param label optional
+   * @param value optional
+   * @param event Optional, defaults to eventTracker
+   * @param uuid
+   * @returns {dataLayer}
+   */
+  dataLayer.prototype.event = function (category, action, label, value, event, uuid) {
+    return this.push({
+      "event"   : event || this.settings.event,
+      "eventCat": category,
+      "eventAct": action,
+      "eventLbl": label,
+      "eventVal": value,
+    }, uuid);
+  };
 
   Drupal.loftGTM = {};
 
@@ -14,7 +79,13 @@
     if (Drupal.settings.loftGTM.logging) {
       console.log(message);
     }
-  }
+  };
+
+  /**
+   * Expose this to the world.
+   * @type {dataLayer}
+   */
+  Drupal.loftGTM.dataLayer = new dataLayer(Drupal.loftGTM.log, Drupal.settings.loftGTM, googleDataLayer);
 
   /**
    * Push an event to Google tag manager.
@@ -25,6 +96,8 @@
    * @param action
    * @param label
    * @param value
+   *
+   * @deprecated Will be removed in future versions.  Convert to Drupal.loftGTM.dataLayer.event() instead.
    */
   Drupal.loftGTM.push = function (event, category, action, label, value) {
     var _    = this,
@@ -41,17 +114,7 @@
         }
       }
 
-      if (!Drupal.settings.loftGTM.enabled) {
-        throw 'loftGTM.enabled === false, prevented push ' + JSON.stringify(args);
-      }
-
-      if (typeof dataLayer === 'undefined') {
-        throw "Missing dependency 'dataLayer'; cannot push " + JSON.stringify(args);
-      }
-
-      _.log('Google tag manager, dataLayer.push executed.');
-      _.log(args)
-      dataLayer.push(args);
+      return this.dataLayer.event(category, action, label, value, event);
     }
     catch (error) {
       if (Drupal.settings.loftGTM.logging) {
@@ -60,61 +123,7 @@
       else {
         throw error;
       }
-
     }
   }
-
-
-  /**
-   * Retrieve and execute queue records by id
-   *
-   * @param array ids
-   */
-  Drupal.loftGTM.process = function (ids) {
-    var settings = Drupal.settings;
-    $.post(settings.loftGTM.url + '/queue/process/ajax', {
-      ids  : ids,
-      token: settings.loftGTM.token,
-    }, function (data) {
-      for (var i in data) {
-        if (data[i].method) {
-          DataLayer[data[i].method](data[i].params);
-        }
-        else {
-          DataLayer = data[i].params;
-        }
-      }
-    });
-  };
-
-  /**
-   * Clear queue records by id
-   *
-   * @param array ids
-   */
-  Drupal.loftGTM.clear = function (ids) {
-    var settings = Drupal.settings;
-    $.post(settings.loftGTM.url + '/queue/clear/ajax', {
-      ids  : ids,
-      token: settings.loftGTM.token,
-    });
-  };
-
-  /**
-   * Core behavior for loft_gtm.
-   */
-  Drupal.behaviors.loftGTM = {};
-  Drupal.behaviors.loftGTM.attach = function (context, settings) {
-
-    if (typeof settings.loftGTM.token === undefined) {
-      throw "missing loftGTM token.";
-    }
-
-    // Process the queue
-    if (settings.loftGTM.ids) {
-      Drupal.loftGTM[settings.loftGTM.method](settings.loftGTM.ids);
-    }
-  };
-
 })
-(jQuery, Drupal, window, document, undefined);
+(jQuery, Drupal, dataLayer);
