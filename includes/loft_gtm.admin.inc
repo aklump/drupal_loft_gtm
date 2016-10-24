@@ -67,16 +67,6 @@ function loft_gtm_admin_settings($form, &$form_state)
         '#default_value' => variable_get('loft_gtm_logging', LOFT_GTM_LOGGING),
     );
 
-    $form['loft_gtm_injection_mode'] = array(
-        '#type'          => 'radios',
-        '#title'         => t('DataLayer Processing'),
-        '#default_value' => variable_get('loft_gtm_injection_mode', LOFT_GTM_INJECTION_MODE),
-        '#options'       => array(
-            1 => t('Written in the HTML'),
-            2 => t('Processed via AJAX'),
-        ),
-    );
-
     $form['#validate'][] = 'loft_gtm_admin_settings_validate';
 
     return system_settings_form($form);

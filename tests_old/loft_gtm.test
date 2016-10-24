@@ -172,8 +172,6 @@ EOD;
   }
 
   public function subtest__html_output() {
-    variable_set('loft_gtm_injection_mode', 1);
-
     $account = $this->drupalCreateUser(array('loft_gtm_dev:use'));
     $this->drupalLogin($account);
     $html = $this->drupalGet('loft-gtm/test?reset=1');

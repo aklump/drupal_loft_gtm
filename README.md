@@ -25,14 +25,13 @@ By default the code will be spit out using $page['content']['loft_gtm'].  This m
 As a second option you can adjust the settings $conf['loft_gtm_theme_support'] and then do the following where $loft_gtm is provided to html.tpl.php.
 
 You will want to do something like this to `html.tpl.php`
-
-    <body class="<?php print $classes; ?>" <?php print $attributes;?>>
-      <?php print render($page_top['loft_gtm_noscript']) ?>
-      <div id="skip-link">
-        <a href="#main-content" class="element-invisible element-focusable"><?php print t('Skip to main content'); ?></a>
-      </div>
-      <?php print $page_top; ?>
-      <?php print $page; ?>
+    
+    ...
+    </head>
+    <body class="<?php print $classes; ?>" <?php print $attributes; ?>>
+    <?php print render($loft_gtm) ?>
+    <div id="skip-link">
+        <a href="#main-content"...
 
 ## Developers
 The point of [Google Tag Manager](https://www.google.com/analytics/tag-manager/) is to give away control to the Google UI, rather than the Drupal UI, however some tasks remain for the developer to do.  For these tasks read on.
@@ -83,6 +82,13 @@ Here is some example code to send an event based on the contact id of the contac
 ### Usage via PHP
 1. Anytime you want to output a GTM event in HTML you will use `loft_gtm_queue_add()` to add the event.  All events added during processing will be written in html on the next output.
 1. Important to note that the queue is cleared via ajax, so repeatedly viewing source will show you a growing queue.  That is inaccurate and only occurs because the ajax is not clearing the queue.
+
+### Development servers
+It's probably a good idea to do something like this in a dev only settings file:
+
+    $conf['loft_gtm_enabled'] = false;
+    $conf['loft_gtm_logging'] = true;
+    //$conf['loft_gtm_code'] = '<!--Google Tag Manager Disabled for Dev-->';
 
 ##Contact
 * **In the Loft Studios**
