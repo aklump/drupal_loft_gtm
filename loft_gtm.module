@@ -217,6 +217,7 @@ function loft_gtm_datalayer()
     }
     $dataLayer = &$drupal_static_fast['dataLayer'];
     if (!isset($dataLayer)) {
+        $_SESSION = isset($_SESSION) ? $_SESSION : array();
         $dataLayer = data_api()->get($_SESSION, 'loft_gtm.datalayer', null, function ($dataLayer) {
             if (is_null($dataLayer)) {
                 $dataLayer = new DataLayer(
