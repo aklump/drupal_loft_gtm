@@ -5,8 +5,13 @@
  * @ingroup loft_gtm
  * @{
  */
+var dataLayer = dataLayer || false;
 (function ($, Drupal, googleDataLayer) {
   "use strict";
+
+  if (googleDataLayer === false) {
+    return;
+  }
 
   /**
    * A wrapper for google's dataLayer integrates drupal controls and logging.
