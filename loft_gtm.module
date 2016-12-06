@@ -26,7 +26,7 @@ define('LOFT_GTM_ENABLED', true);
  *
  * The default value of the loggin switch.
  */
-define('LOFT_GTM_LOGGING', true);
+define('LOFT_GTM_LOGGING', false);
 
 /**
  * @var LOFT_GTM_CODE
