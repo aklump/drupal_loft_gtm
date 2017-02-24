@@ -44,7 +44,7 @@ The point of [Google Tag Manager](https://www.google.com/analytics/tag-manager/)
 
 ### API
 
-1. Drupal.loftGTM.push
+1. Drupal.loftGTM.dataLayer.event
 1. `loft_gtm_queue_add()`
 
 ### For form submission events
@@ -86,7 +86,7 @@ Here is some example code to send an event based on the contact id of the contac
 
 1. Simply call one function:
 
-        Drupal.loftGTM.push(event, category, action, label, value);
+        Drupal.loftGTM.dataLayer.event(event, category, action, label, value);
     
 ### Usage via PHP
 

@@ -91,44 +91,5 @@ var dataLayer = dataLayer || false;
    * @type {dataLayer}
    */
   Drupal.loftGTM.dataLayer = new dataLayer(Drupal.loftGTM.log, Drupal.settings.loftGTM, googleDataLayer);
-
-  /**
-   * Push an event to Google tag manager.
-   *
-   * @param event string|object  If you want to send the entire object as the first argument, you may do so, in which
-   *   case the other arguments are ignored.  Otherwise send each argument to build the object.
-   * @param category
-   * @param action
-   * @param label
-   * @param value
-   *
-   * @deprecated Will be removed in future versions.  Convert to Drupal.loftGTM.dataLayer.event() instead.
-   */
-  Drupal.loftGTM.push = function (event, category, action, label, value) {
-    var _    = this,
-        args = event;
-
-    try {
-      if (typeof event !== 'object') {
-        args = {
-          'event'   : event,
-          'eventCat': category,
-          'eventAct': action,
-          'eventLbl': label,
-          'eventVal': value
-        }
-      }
-
-      return this.dataLayer.event(category, action, label, value, event);
-    }
-    catch (error) {
-      if (Drupal.settings.loftGTM.logging) {
-        _.log(error);
-      }
-      else {
-        throw error;
-      }
-    }
-  }
 })
 (jQuery, Drupal, dataLayer);

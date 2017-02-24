@@ -9,3 +9,5 @@
 1. And then add this to settings.php: 
 
         $conf['loft_gtm_theme_support'] = 1;
+
+1. You must replace `Drupal.loftGTM.push` with `Drupal.loftGTM.dataLayer.event` and change the object argument to scalar arguments
