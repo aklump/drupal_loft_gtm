@@ -130,8 +130,6 @@ function loft_gtm_preprocess_html(&$vars)
         }
 
     }
-
-    drupal_render($attached);
 }
 
 /**
@@ -238,11 +236,11 @@ function loft_gtm_datalayer()
  *
  * Takes an aliased page and returns the relative normal url
  *
- * @param array $options
+ * @param string $path
+ * @param array  $options
  *   (Optional) Defaults to array.  These are passed to url()
  *
  * @return string
- *
  * @see url().
  * @see drupal_get_normal_path().
  */
@@ -258,6 +256,9 @@ function loft_gtm_get_path($path = '', $options = array())
 
 /**
  * Implements hook_module_implements_alter().
+ *
+ * @param $implementations
+ * @param $hook
  */
 function loft_gtm_module_implements_alter(&$implementations, $hook)
 {

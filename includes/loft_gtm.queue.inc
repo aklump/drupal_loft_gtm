@@ -20,7 +20,6 @@ function _loft_gtm_ajax_handler_queue()
     if ($type != 'ajax') {
         return MENU_NOT_FOUND;
     }
-    $commands = array();
     $ids = isset($_POST['ids']) ? json_decode($_POST['ids']) : array();
     switch ($op) {
         case 'clear':
@@ -59,7 +58,7 @@ function _loft_gtm_ajax_handler_queue()
 /**
  * Remove one or more items from the queue by id
  *
- * @param string | array $string
+ * @param string|array $ids
  *   An id or array of ids to remove
  *
  * @return array

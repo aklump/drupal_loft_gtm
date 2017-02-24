@@ -12,18 +12,25 @@
  *
  * @ingroup forms
  * @see     system_settings_form()
+ *
+ * @param $form
+ * @param $form_state
+ *
+ * @return mixed
  */
 function loft_gtm_admin_settings($form, &$form_state)
 {
     $code0 = variable_get('loft_gtm_code', LOFT_GTM_CODE);
     $code1 = variable_get('loft_gtm_code_noscript', LOFT_GTM_CODE_NOSCRIPT);
+    $description = t('Enter your <a href="!codeurl">code from Google here</a>. To obtain your code or register for an account visit <a href="!url">Google.com</a>.', array(
+        '!url'     => url('http://www.google.com/tagmanager/'),
+        '!codeurl' => url('https://developers.google.com/tag-manager/quickstart'),
+    ));
 
     $form['init'] = array(
         '#type'        => 'fieldset',
         '#title'       => t('Google Tag Manager Code Snippets'),
-        '#description' => t('Enter your code from Google here. To obtain your code or register for an account visit <a href="!url">Google.com</a>.', array(
-            '!url' => url('http://www.google.com/tagmanager/'),
-        )),
+        '#description' => $description,
         '#collapsible' => true,
         '#collapsed'   => !empty($code0 . $code1),
     );
@@ -46,9 +53,7 @@ function loft_gtm_admin_settings($form, &$form_state)
     $form['init']['loft_gtm_code_noscript'] = array(
         '#type'          => 'textarea',
         '#title'         => t('Box Two (Additionally, paste this code immediately after the opening &lt;body> tag)'),
-        '#description'   => t('Enter your code from Google here. To obtain your code or register for an account visit <a href="@url">Google.com</a>.', array(
-            '@url' => url('http://www.google.com/tagmanager/'),
-        )),
+        '#description'   => $description,
         '#default_value' => $code1,
         '#required'      => true,
         '#rows'          => 5,

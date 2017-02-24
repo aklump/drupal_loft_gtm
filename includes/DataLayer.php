@@ -6,8 +6,8 @@
  *
  * Use this class to set the default dataLayer values for a page.
  */
-class DataLayer
-{
+class DataLayer {
+
     protected $index = array();
     protected $data = array();
     protected $settings = array();
@@ -15,7 +15,9 @@ class DataLayer
     /**
      * DataLayer constructor.
      *
-     * @param array $settings
+     * @param $default_event
+     *
+     * @internal param array $settings
      */
     public function __construct($default_event)
     {
@@ -23,6 +25,22 @@ class DataLayer
         $this->settings['event'] = $default_event;
     }
 
+    /**
+     * Flush all data and instance data from the object.
+     *
+     * Usually you want to call this after build() when you know you've
+     * rendered the data.
+     */
+    public function flush()
+    {
+        $this->data = array(
+            'instances' => array(),
+            'defaults'  => array(),
+        );
+        $this->index = array();
+
+        return $this;
+    }
 
     /**
      * Set a default value to be present as defaults.
@@ -45,6 +63,7 @@ class DataLayer
 
     /**
      * Returns an array of javascript ready to be added to the page.
+     *
      * @return array
      *   0: The defaul values to be placed before the container
      *   ...: Push instances to be placed after the container code.
@@ -60,19 +79,26 @@ class DataLayer
     }
 
     /**
-     * Flush all data and instance data from the object.
+     * Pushes a eventTracker event
      *
-     * Usually you want to call this after build() when you know you've rendered the data.
+     * @param        $category
+     * @param        $action
+     * @param string $label
+     * @param string $value
+     *
+     * @return \DataLayer
      */
-    public function flush()
+    public function event($category, $action, $label = '', $value = '', $event = '', $uuid = false)
     {
-        $this->data = array(
-            'instances' => array(),
-            'defaults'  => array(),
-        );
-        $this->index = array();
+        $event = array_filter(array(
+            'event'    => empty($event) ? $this->settings['event'] : $event,
+            'eventCat' => $category,
+            'eventAct' => $action,
+            'eventLbl' => $label,
+            'eventVal' => $value,
+        ));
 
-        return $this;
+        return $this->push($event, $uuid);
     }
 
     /**
@@ -100,28 +126,5 @@ class DataLayer
         }
 
         return $this;
-    }
-
-    /**
-     * Pushes a eventTracker event
-     *
-     * @param        $category
-     * @param        $action
-     * @param string $label
-     * @param string $value
-     *
-     * @return \DataLayer
-     */
-    public function event($category, $action, $label = '', $value = '', $event = '', $uuid = false)
-    {
-        $event = array_filter(array(
-            'event'    => empty($event) ? $this->settings['event'] : $event,
-            'eventCat' => $category,
-            'eventAct' => $action,
-            'eventLbl' => $label,
-            'eventVal' => $value,
-        ));
-
-        return $this->push($event, $uuid);
     }
 }
