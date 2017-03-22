@@ -37,11 +37,13 @@ var dataLayer = dataLayer || false;
 
     // Validation checking
     if (!this.settings.enabled) {
-      throw 'loftGTM.enabled === false, prevented push ' + json;
+      this.log('loftGTM.enabled === false, prevented push ' + json);
+      return this;
     }
 
     if (!this.googleDataLayer) {
-      throw "Missing dependency 'dataLayer'; cannot push " + json;
+      this.log("Missing dependency 'dataLayer'; cannot push " + json);
+      return this;
     }
 
     var key = typeof(uuid) === "string" ? uuid : JSON.stringify(data);
