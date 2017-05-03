@@ -179,7 +179,7 @@ function loft_gtm_menu()
  *
  * @param mixed $data
  *       (Optional) Defaults to NULL.
- *       - #method
+ *       - #method string Defaults to 'push'.  see DataLayer for methods, which are available as values.
  *       - #params array
  *       - Each element can be a value or an array; if latter:
  *       - callback: the callback will be called immediately
@@ -192,6 +192,9 @@ function loft_gtm_menu()
  */
 function loft_gtm_queue_add($data = null)
 {
+    if (empty($data['#method'])) {
+        $data['#method'] = 'push';
+    }
     loft_gtm_datalayer()->{$data['#method']}($data['#params'])->build();
 
     return array();
