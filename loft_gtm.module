@@ -121,12 +121,15 @@ function loft_gtm_preprocess_html(&$vars)
 
         // These are all the push instances
         if ($pushes) {
-            $vars[$var_name]['push'] = array(
-                '#prefix' => '<script>',
-                '#suffix' => '</script>' . PHP_EOL,
-                '#markup' => implode(PHP_EOL, $pushes),
-                '#weight' => $weight - 1,
+            $js['#attached']['js'][] = array(
+                'type' => 'inline',
+                'data' => implode(PHP_EOL, $pushes),
+                'scope' => 'footer',
+                'group' => JS_THEME,
+                'cache' => FALSE,
+                'preprocess' => FALSE,
             );
+            drupal_render($js);
         }
 
     }

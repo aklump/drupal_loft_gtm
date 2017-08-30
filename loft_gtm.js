@@ -6,7 +6,9 @@
  * @{
  */
 var dataLayer = dataLayer || false;
-(function ($, Drupal, googleDataLayer) {
+
+// Here we reassign the value of Google's dataLayer with our wrapper.
+dataLayer = (function ($, Drupal, googleDataLayer) {
   "use strict";
 
   if (googleDataLayer === false) {
@@ -32,7 +34,6 @@ var dataLayer = dataLayer || false;
    * @returns {dataLayer}
    */
   dataLayer.prototype.push = function (data, uuid) {
-
     var json = JSON.stringify(data);
 
     // Validation checking
@@ -72,7 +73,7 @@ var dataLayer = dataLayer || false;
    */
   dataLayer.prototype.event = function (category, action, label, value, event, uuid) {
     return this.push({
-      "event"   : event || this.settings.event,
+      "event": event || this.settings.event,
       "eventCat": category,
       "eventAct": action,
       "eventLbl": label,
@@ -91,7 +92,10 @@ var dataLayer = dataLayer || false;
   /**
    * Expose this to the world.
    * @type {dataLayer}
+   * @deprecated Use dataLayer instead
    */
   Drupal.loftGTM.dataLayer = new dataLayer(Drupal.loftGTM.log, Drupal.settings.loftGTM, googleDataLayer);
+
+  return Drupal.loftGTM.dataLayer;
 })
 (jQuery, Drupal, dataLayer);

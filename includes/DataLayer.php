@@ -67,10 +67,12 @@ class DataLayer {
      * @return array
      *   0: The defaul values to be placed before the container
      *   ...: Push instances to be placed after the container code.
+     *
+     * @link http://www.lunametrics.com/blog/2016/03/21/gtm-data-layer-best-practices/
      */
     public function build()
     {
-        $build[] = 'dataLayer = ' . json_encode($this->data['defaults']) . ';';
+        $build[] = 'var dataLayer = window.dataLayer = window.dataLayer || ' . json_encode($this->data['defaults']) . ';';
         foreach ($this->data['instances'] as $instance) {
             $build[] = 'dataLayer.push(' . json_encode($instance) . ');';
         }
