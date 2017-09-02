@@ -45,35 +45,16 @@ define('LOFT_GTM_URL_REGEX_REPLACE', '${1}${5}?utm_nooverride=1&${6}${7}');
  */
 function loft_gtm_is_active()
 {
-    $code = variable_get('loft_gtm_code', LOFT_GTM_CODE);
+    static $is_active = null;
+    if (is_null($is_active)) {
+        $code = variable_get('loft_gtm_code', LOFT_GTM_CODE);
+        $is_active = !empty($code);
 
-    return !empty($code);
-}
-
-/**
- * Implements hook_init().
- */
-function loft_gtm_init()
-{
-    if (loft_gtm_is_active()) {
-        $attached = array();
-        $attached['#attached']['js'][] = array(
-            'type'  => 'file',
-            'data'  => drupal_get_path('module', 'loft_gtm') . '/loft_gtm.js',
-            'scope' => 'footer',
-        );
-        $attached['#attached']['js'][] = array(
-            'type' => 'setting',
-            'data' => array(
-                'loftGTM' => array(
-                    'event'   => variable_get('loft_gtm_default_event', LOFT_GTM_DEFAULT_EVENT),
-                    'enabled' => variable_get('loft_gtm_enabled', LOFT_GTM_ENABLED),
-                    'logging' => variable_get('loft_gtm_logging', LOFT_GTM_LOGGING),
-                ),
-            ),
-        );
-        drupal_render($attached);
+        // Allow modules to suppress this, say on admin pages.
+        drupal_alter('loft_gtm_is_active', $is_active);
     }
+
+    return $is_active;
 }
 
 /**
@@ -83,6 +64,24 @@ function loft_gtm_preprocess_html(&$vars)
 {
     // Inserts the master GTM code snippet
     if (loft_gtm_is_active()) {
+
+        $js = array();
+        $js['#attached']['js'][] = array(
+            'type' => 'file',
+            'data' => drupal_get_path('module', 'loft_gtm') . '/loft_gtm.js',
+            'scope' => 'footer',
+        );
+        $js['#attached']['js'][] = array(
+            'type' => 'setting',
+            'data' => array(
+                'loftGTM' => array(
+                    'event' => variable_get('loft_gtm_default_event', LOFT_GTM_DEFAULT_EVENT),
+                    'enabled' => variable_get('loft_gtm_enabled', LOFT_GTM_ENABLED),
+                    'logging' => variable_get('loft_gtm_logging', LOFT_GTM_LOGGING),
+                ),
+            ),
+        );
+
         $g = data_api();
         $var_name = variable_get('loft_gtm_theme_support', false) ? 'loft_gtm' : 'page.content.loft_gtm';
 
@@ -126,12 +125,12 @@ function loft_gtm_preprocess_html(&$vars)
                 'data' => implode(PHP_EOL, $pushes),
                 'scope' => 'footer',
                 'group' => JS_THEME,
-                'cache' => FALSE,
-                'preprocess' => FALSE,
+                'cache' => false,
+                'preprocess' => false,
             );
-            drupal_render($js);
         }
 
+        drupal_render($js);
     }
 }
 
@@ -142,7 +141,7 @@ function loft_gtm_permission()
 {
     return array(
         'loft_gtm:administer' => array(
-            'title'       => t('Administer Google Tag Manager'),
+            'title' => t('Administer Google Tag Manager'),
             'description' => t("Perform administration tasks for Google Tag Manager API."),
         ),
     );
@@ -156,22 +155,22 @@ function loft_gtm_menu()
     $items = array();
 
     $items['admin/config/search/loft-gtm'] = array(
-        'title'            => 'Google Tag Manager',
-        'page callback'    => 'drupal_get_form',
-        'page arguments'   => array('loft_gtm_admin_settings'),
+        'title' => 'Google Tag Manager',
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('loft_gtm_admin_settings'),
         'access arguments' => array('loft_gtm:administer'),
-        'type'             => MENU_NORMAL_ITEM,
-        'file'             => 'includes/loft_gtm.admin.inc',
+        'type' => MENU_NORMAL_ITEM,
+        'file' => 'includes/loft_gtm.admin.inc',
     );
     $items['admin/config/search/loft-gtm/settings'] = array(
-        'title'  => 'Settings',
-        'type'   => MENU_DEFAULT_LOCAL_TASK,
+        'title' => 'Settings',
+        'type' => MENU_DEFAULT_LOCAL_TASK,
         'weight' => -10,
     );
     $items['loft-gtm/ajax'] = array(
-        'page callback'    => 'loft_gtm_ajax_handler',
+        'page callback' => 'loft_gtm_ajax_handler',
         'access arguments' => array('access content'),
-        'type'             => MENU_CALLBACK,
+        'type' => MENU_CALLBACK,
     );
 
     return $items;
@@ -182,7 +181,8 @@ function loft_gtm_menu()
  *
  * @param mixed $data
  *       (Optional) Defaults to NULL.
- *       - #method string Defaults to 'push'.  see DataLayer for methods, which are available as values.
+ *       - #method string Defaults to 'push'.  see DataLayer for methods, which
+ *       are available as values.
  *       - #params array
  *       - Each element can be a value or an array; if latter:
  *       - callback: the callback will be called immediately

@@ -5,6 +5,10 @@
  * @ingroup loft_gtm
  * @{
  */
+
+// It's possible that dataLayer is not defined, such as when the admin theme is active.
+dataLayer = dataLayer || false;
+
 (function (Drupal, dataLayer) {
   "use strict";
 
