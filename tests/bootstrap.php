@@ -14,7 +14,7 @@ if (!defined('MENU_CALLBACK')) {
 }
 require_once dirname(__FILE__) . '/../loft_gtm.module';
 require_once dirname(__FILE__) . '/../includes/DataLayer.php';
-require_once '/Volumes/Data/Users/aklump/Code/Packages/drupal/data_api/tests/bootstrap.php';
+require_once '/Users/aklump/Code/Packages/drupal/data_api/tests/bootstrap.php';
 
 function t($string, $vars = array())
 {

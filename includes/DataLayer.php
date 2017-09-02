@@ -74,6 +74,8 @@ class DataLayer {
     {
         $build[] = 'var dataLayer = window.dataLayer = window.dataLayer || ' . json_encode($this->data['defaults']) . ';';
         foreach ($this->data['instances'] as $instance) {
+
+            // We push with our wrapper, no the dataLayer object from google.
             $build[] = 'dataLayer.push(' . json_encode($instance) . ');';
         }
 
