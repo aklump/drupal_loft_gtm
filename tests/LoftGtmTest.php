@@ -10,8 +10,8 @@ class LoftGtmTest extends PHPUnit_Framework_TestCase
         $obj->event('shopping', 'checkout complete');
         $build = $obj->build();
         $this->assertCount(2, $build);
-        $this->assertSame('var dataLayer = window.dataLayer = window.dataLayer || [{"cartValue":100.99}];', $build[0]);
-        $this->assertSame('dataLayer.push({"event":"eventTracker","eventCat":"shopping","eventAct":"checkout complete"});', $build[1]);
+        $this->assertSame('dataLayer = [{"cartValue":100.99}];', $build[0]);
+        $this->assertSame('Drupal.loftGTM.dataLayer.push({"event":"eventTracker","eventCat":"shopping","eventAct":"checkout complete"});', $build[1]);
     }
 
     public function testDataLayerPushNoRepeatByUuid()
@@ -22,9 +22,9 @@ class LoftGtmTest extends PHPUnit_Framework_TestCase
         $obj->push(['event' => 'click'], true);
         $build = $obj->build();
         $this->assertCount(3, $build);
-        $this->assertSame('var dataLayer = window.dataLayer = window.dataLayer || [];', $build[0]);
-        $this->assertSame('dataLayer.push({"event":"click"});', $build[1]);
-        $this->assertSame('dataLayer.push({"event":"click"});', $build[2]);
+        $this->assertSame('dataLayer = [];', $build[0]);
+        $this->assertSame('Drupal.loftGTM.dataLayer.push({"event":"click"});', $build[1]);
+        $this->assertSame('Drupal.loftGTM.dataLayer.push({"event":"click"});', $build[2]);
     }
 
     public function testDataLayerPushNoRepeat()
@@ -34,8 +34,8 @@ class LoftGtmTest extends PHPUnit_Framework_TestCase
         $obj->push(['event' => 'click'], true);
         $build = $obj->build();
         $this->assertCount(2, $build);
-        $this->assertSame('var dataLayer = window.dataLayer = window.dataLayer || [];', $build[0]);
-        $this->assertSame('dataLayer.push({"event":"click"});', $build[1]);
+        $this->assertSame('dataLayer = [];', $build[0]);
+        $this->assertSame('Drupal.loftGTM.dataLayer.push({"event":"click"});', $build[1]);
     }
 
     public function testDataLayerPush()
@@ -45,9 +45,9 @@ class LoftGtmTest extends PHPUnit_Framework_TestCase
         $obj->push(['event' => 'click_again']);
         $build = $obj->build();
         $this->assertCount(3, $build);
-        $this->assertSame('var dataLayer = window.dataLayer = window.dataLayer || [];', $build[0]);
-        $this->assertSame('dataLayer.push({"event":"click"});', $build[1]);
-        $this->assertSame('dataLayer.push({"event":"click_again"});', $build[2]);
+        $this->assertSame('dataLayer = [];', $build[0]);
+        $this->assertSame('Drupal.loftGTM.dataLayer.push({"event":"click"});', $build[1]);
+        $this->assertSame('Drupal.loftGTM.dataLayer.push({"event":"click_again"});', $build[2]);
     }
 
     public function testDataLayerSet()
@@ -57,7 +57,7 @@ class LoftGtmTest extends PHPUnit_Framework_TestCase
         $obj->set('cartTotal', 45.78);
         $build = $obj->build();
         $this->assertCount(1, $build);
-        $this->assertSame('var dataLayer = window.dataLayer = window.dataLayer || [{"cartTotal":45.78}];', $build[0]);
+        $this->assertSame('dataLayer = [{"cartTotal":45.78}];', $build[0]);
     }
 
     /**

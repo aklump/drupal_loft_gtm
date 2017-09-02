@@ -5,14 +5,12 @@
  * @ingroup loft_gtm
  * @{
  */
-var dataLayer = dataLayer || false;
-
 (function (Drupal, dataLayer) {
   "use strict";
 
   // @link https://developers.google.com/tag-manager/devguide
   // Do nothing if there is no dataLayer (Google's dataLayer)
-  if (dataLayer === false) {
+  if (!dataLayer) {
     return;
   }
 
@@ -23,13 +21,6 @@ var dataLayer = dataLayer || false;
   var pushed = [];
 
   /**
-   * Capture the original function, which will be embedded in the monkey-patch.
-   *
-   * @type {{event: event}}
-   */
-  var googlesPushMethod = dataLayer.push;
-
-  /**
    * An object that can be used to interact with dataLayer (shortcuts, etc).
    *
    * @type {{settings, dataLayer: boolean, push: push, event: event, log: log}}
@@ -38,9 +29,6 @@ var dataLayer = dataLayer || false;
   var reporter = {
 
     settings: Drupal.settings.loftGTM,
-
-    dataLayer: dataLayer,
-
 
     /**
      * Shortcut method to push events into dataLayer
@@ -80,7 +68,7 @@ var dataLayer = dataLayer || false;
         return;
       }
 
-      if (!this.dataLayer) {
+      if (!dataLayer) {
         this.log("Missing dependency 'dataLayer'; cannot push " + json);
         return;
       }
@@ -91,7 +79,7 @@ var dataLayer = dataLayer || false;
         this.log('Google tag manager, dataLayer.push executed.');
         this.log(data);
 
-        return googlesPushMethod(data);
+        return dataLayer.push(data);
       }
       this.log('Duplicate push blocked for ' + json);
     },
@@ -108,14 +96,6 @@ var dataLayer = dataLayer || false;
 
       console.log(message);
     }
-  };
-
-  //
-  //
-  // Monkey-Patch: Wrap the dataLayer push with our own function that enhances things.
-  //
-  dataLayer.push = function (data) {
-    return reporter.push(data);
   };
 
   //

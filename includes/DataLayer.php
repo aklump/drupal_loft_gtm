@@ -9,7 +9,9 @@
 class DataLayer {
 
     protected $index = array();
+
     protected $data = array();
+
     protected $settings = array();
 
     /**
@@ -35,7 +37,7 @@ class DataLayer {
     {
         $this->data = array(
             'instances' => array(),
-            'defaults'  => array(),
+            'defaults' => array(),
         );
         $this->index = array();
 
@@ -58,25 +60,29 @@ class DataLayer {
         if (!is_scalar($value)) {
             throw new \InvalidArgumentException("value must be a scalar.");
         }
-        $this->data['defaults'][0][$key] = $value;
+        $this->data['defaults'][$key] = $value;
     }
 
     /**
      * Returns an array of javascript ready to be added to the page.
      *
      * @return array
-     *   0: The defaul values to be placed before the container
+     *   0: The default values to be placed before the container
      *   ...: Push instances to be placed after the container code.
-     *
-     * @link http://www.lunametrics.com/blog/2016/03/21/gtm-data-layer-best-practices/
      */
     public function build()
     {
-        $build[] = 'var dataLayer = window.dataLayer = window.dataLayer || ' . json_encode($this->data['defaults']) . ';';
+        // @link https://developers.google.com/tag-manager/devguide
+        if (empty($this->data['defaults'])) {
+            $build[] = 'dataLayer = [];';
+        }
+        else {
+            $build[] = 'dataLayer = ' . json_encode(array((object) $this->data['defaults'])) . ';';
+        }
         foreach ($this->data['instances'] as $instance) {
 
             // We push with our wrapper, no the dataLayer object from google.
-            $build[] = 'dataLayer.push(' . json_encode($instance) . ');';
+            $build[] = 'Drupal.loftGTM.dataLayer.push(' . json_encode($instance) . ');';
         }
 
         return $build;
@@ -95,7 +101,7 @@ class DataLayer {
     public function event($category, $action, $label = '', $value = '', $event = '', $uuid = false)
     {
         $event = array_filter(array(
-            'event'    => empty($event) ? $this->settings['event'] : $event,
+            'event' => empty($event) ? $this->settings['event'] : $event,
             'eventCat' => $category,
             'eventAct' => $action,
             'eventLbl' => $label,

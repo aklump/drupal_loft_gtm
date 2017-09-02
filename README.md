@@ -44,8 +44,8 @@ The point of [Google Tag Manager](https://www.google.com/analytics/tag-manager/)
 
 ### API
 
-1. `dataLayer.push()`
-1. `dataLayer.event()`
+1. Drupal.loftGTM.dataLayer.push (use this over dataLayer.push for drupal integration)
+1. Drupal.loftGTM.dataLayer.event
 1. `loft_gtm_queue_add()`
 
 ### For form submission events
