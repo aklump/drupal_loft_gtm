@@ -5,12 +5,12 @@
  * @ingroup loft_gtm
  * @{
  */
+var dataLayer = dataLayer || null;
 
-// It's possible that dataLayer is not defined, such as when the admin theme is active.
-dataLayer = dataLayer || false;
-
-(function (Drupal, dataLayer) {
-  "use strict";
+// It's possible that dataLayer is not defined, such as when the admin theme is
+// active.
+(function(Drupal, dataLayer) {
+  'use strict';
 
   // @link https://developers.google.com/tag-manager/devguide
   // Do nothing if there is no dataLayer (Google's dataLayer)
@@ -45,13 +45,13 @@ dataLayer = dataLayer || false;
      * @param uuid
      * @returns {dataLayer}
      */
-    event: function (category, action, label, value, event, uuid) {
+    event: function(category, action, label, value, event, uuid) {
       return this.push({
-        "event": event || this.settings.event,
-        "eventCat": category,
-        "eventAct": action,
-        "eventLbl": label,
-        "eventVal": value
+        'event': event || this.settings.event,
+        'eventCat': category,
+        'eventAct': action,
+        'eventLbl': label,
+        'eventVal': value
       }, uuid);
     },
 
@@ -63,7 +63,7 @@ dataLayer = dataLayer || false;
      * @param uuid
      * @returns {*}
      */
-    push: function (data, uuid) {
+    push: function(data, uuid) {
       var json = JSON.stringify(data);
 
       // Validation checking
@@ -73,11 +73,11 @@ dataLayer = dataLayer || false;
       }
 
       if (!dataLayer) {
-        this.log("Missing dependency 'dataLayer'; cannot push " + json);
+        this.log('Missing dependency \'dataLayer\'; cannot push ' + json);
         return;
       }
 
-      var flatUuid = typeof(uuid) === "string" ? uuid : JSON.stringify(data);
+      var flatUuid = typeof (uuid) === 'string' ? uuid : JSON.stringify(data);
       if (!uuid || !pushed[flatUuid]) {
         pushed[flatUuid] = true;
         this.log('Google tag manager, dataLayer.push executed.');
@@ -93,7 +93,7 @@ dataLayer = dataLayer || false;
      *
      * @param message
      */
-    log: function (message) {
+    log: function(message) {
       if (!this.settings.logging) {
         return;
       }

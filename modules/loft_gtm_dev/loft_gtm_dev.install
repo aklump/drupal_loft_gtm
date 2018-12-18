@@ -10,30 +10,28 @@
 /**
  * Implements hook_uninstall().
  */
-function loft_gtm_dev_uninstall()
-{
-    $vars = db_select('variable', 'v')
-        ->fields('v', array('name'))
-        ->condition('name', 'loft_gtm_dev%', 'LIKE')
-        ->execute()->fetchCol();
-    foreach ($vars as $var) {
-        variable_del($var);
-    }
-    db_delete('block')
-        ->condition('module', 'loft_gtm_dev')
-        ->execute();
-    db_delete('block_role')
-        ->condition('module', 'loft_gtm_dev')
-        ->execute();
+function loft_gtm_dev_uninstall() {
+  $vars = db_select('variable', 'v')
+    ->fields('v', array('name'))
+    ->condition('name', 'loft_gtm_dev%', 'LIKE')
+    ->execute()->fetchCol();
+  foreach ($vars as $var) {
+    variable_del($var);
+  }
+  db_delete('block')
+    ->condition('module', 'loft_gtm_dev')
+    ->execute();
+  db_delete('block_role')
+    ->condition('module', 'loft_gtm_dev')
+    ->execute();
 }
 
 /**
  * Implements hook_enable().
  */
-function loft_gtm_dev_enable()
-{
-    // Message about module settings
-    drupal_set_message(t('You may adjust settings for Google Tag Manager API Developer Tools by visiting <a href="@url">@url</a>.', array('@url' => url('admin/config/search/loft-gtm'))));
+function loft_gtm_dev_enable() {
+  // Message about module settings
+  drupal_set_message(t('You may adjust settings for Google Tag Manager API Developer Tools by visiting <a href="@url">@url</a>.', array('@url' => url('admin/config/search/loft-gtm'))));
 }
 
 /** @} */ //end of group loft_gtm_dev
