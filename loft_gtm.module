@@ -301,27 +301,27 @@ function loft_gtm_mail_alter(&$message) {
 
     $text = &$message['body'][$key];
 
-    // Add utm_nooverride=1 to all links in the message
-    $text = preg_replace(LOFT_GTM_URL_REGEX_FIND, LOFT_GTM_URL_REGEX_REPLACE, $text);
+    if (preg_match_all(LOFT_GTM_URL_REGEX_FIND, $text, $matches)) {
 
-    // Now do some fine tuning, hackish stuff...
-    preg_match_all(LOFT_GTM_URL_REGEX_FIND, $text, $matches);
+      // Add utm_nooverride=1 to all links in the message
+      preg_replace(LOFT_GTM_URL_REGEX_FIND, LOFT_GTM_URL_REGEX_REPLACE, $text);
 
-    // Email address shouldn't have this appended
-    foreach ($matches[1] as $key => $value) {
-      if (valid_email_address($value)) {
-        $text = str_replace($matches[0][$key], $value, $text);
+      // Email address shouldn't have this appended
+      foreach ($matches[1] as $key => $value) {
+        if (valid_email_address($value)) {
+          $text = str_replace($matches[0][$key], $value, $text);
+        }
       }
-    }
 
-    foreach ($matches[0] as $key => $value) {
+      foreach ($matches[0] as $key => $value) {
 
-      // Fix the url that ends with a '.',
-      // e.g., http://www.globalonenessproject.local/user/login.?utm_nooverride=1&
-      if (!empty($matches[6][$key]) && substr($matches[5][$key], -1) === '.') {
-        $find = $replace = $matches[0][$key];
-        $replace = str_replace($matches[5][$key], rtrim($matches[5][$key], '.'), $replace) . '.';
-        $text = str_replace($find, $replace, $text);
+        // Fix the url that ends with a '.',
+        // e.g., http://www.globalonenessproject.local/user/login.?utm_nooverride=1&
+        if (!empty($matches[6][$key]) && substr($matches[5][$key], -1) === '.') {
+          $find = $replace = $matches[0][$key];
+          $replace = str_replace($matches[5][$key], rtrim($matches[5][$key], '.'), $replace) . '.';
+          $text = str_replace($find, $replace, $text);
+        }
       }
     }
   }
